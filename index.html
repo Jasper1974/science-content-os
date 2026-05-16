@@ -522,7 +522,7 @@ body {
 ═══════════════════════════════════════════ */
 var selectedTopic=null,outputFull='',checkState={};
 var SK_STATE='crawl_state2',SK_PAPERS='paper_db2',SK_SCORED='scored_db2';
-var SCORE_N=10;
+var SCORE_N=60;
 var ALL_DIRS=[
   /* ── 死亡恐惧·最强痛点 ── */
   'cancer prevention reversal new mechanism 2024 2025',
@@ -886,7 +886,7 @@ async function fetchPubMedProxy(kw,dStart,dEnd){
   var base=window.location.origin+'/api/pubmed';
   var url;
   if(dStart===0){
-    url=base+'?action=search&term='+encodeURIComponent(kw)+'&retmax=20&reldate='+dEnd;
+    url=base+'?action=search&term='+encodeURIComponent(kw)+'&retmax=30&reldate='+dEnd;
   }else{
     url=base+'?action=search&term='+encodeURIComponent(kw)+'&retmax=20&mindate='+dStr(dEnd)+'&maxdate='+dStr(dStart);
   }
@@ -916,27 +916,34 @@ async function fetchPubMedDirect(kw,dStart,dEnd){
 
 // 3. Semantic Scholar (CORS-friendly, 200M+ papers)
 async function fetchSemanticScholar(kw){
-  var url='https://api.semanticscholar.org/graph/v1/paper/search?query='
-    +encodeURIComponent(kw)
-    +'&limit=15&fields=title,abstract,year,venue,externalIds,publicationDate';
-  var res=await fetch(url,{headers:{'User-Agent':'ScienceContentOS/1.0'}});
-  var data=await res.json();
+  var proxyUrl='/api/semantic?query='+encodeURIComponent(kw)+'&limit=20';
+  var directUrl='https://api.semanticscholar.org/graph/v1/paper/search?query='
+    +encodeURIComponent(kw)+'&limit=20&fields=title,abstract,year,venue,externalIds';
+  var data;
+  try{
+    var r1=await fetch(proxyUrl);
+    data=await r1.json();
+    dbg('SS-proxy got data');
+  }catch(e1){
+    try{
+      var r2=await fetch(directUrl);
+      data=await r2.json();
+      dbg('SS-direct got data');
+    }catch(e2){throw new Error('SS failed: '+e2.message);}
+  }
   var papers=[];
   (data.data||[]).forEach(function(p){
     if(!p.abstract||p.abstract.length<80)return;
     papers.push({
-      title:p.title||'',
-      abstract:p.abstract.slice(0,600),
-      journal:p.venue||'',
-      year:String(p.year||''),
-      pmid:(p.externalIds&&p.externalIds.PubMed)||'ss_'+p.paperId,
+      title:p.title||'',abstract:p.abstract.slice(0,600),
+      journal:p.venue||'',year:String(p.year||''),
+      pmid:(p.externalIds&&p.externalIds.PubMed)||'ss_'+(p.paperId||''),
       fetchedAt:new Date().toISOString()
     });
   });
   return papers;
 }
 
-// 4. Europe PMC (CORS-friendly, covers EU research + PubMed)
 async function fetchEuropePMC(kw){
   var url='https://www.ebi.ac.uk/europepmc/webservices/rest/search?query='
     +encodeURIComponent(kw)
@@ -1169,25 +1176,49 @@ async function scoreNextBatch(papers){
   }).join(sep);
 
   var sys='You are a science communication expert. Output ONLY lines starting with TOPIC|. Zero other text.';
-  var prompt='Evaluate these papers for YouTube/TikTok health science impact.\n\n'
-    +'SCORING (total 100 points):\n'
-    +'Extremity(20): How shocking? Layperson says "really?!"\n'
-    +'Urgency(20): Harm happening now unnoticed? Irreversible?\n'
-    +'ChallengesBelief(15): Overturns something most people do daily?\n'
-    +'HiddenProcess(15): Reveals what body does without your knowledge?\n'
-    +'VividNumbers(10): Data translatable to shocking everyday comparisons?\n'
-    +'AudienceBreadth(10): How universal? More people = higher\n'
-    +'Freshness(10): Not already covered by major science channels?\n\n'
-    +'EXCLUDE: specific drug treatments, cure claims, alternative medicine.\n'
-    +'safe = usable with research found framing\n'
-    +'warn = preliminary or animal study only\n\n'
-    +'CRITICAL for Chinese title: Create a punchy ONE-LINE headline that:\n'
-    +'- Includes specific numbers/percentages/comparisons if available\n'
-    +'- Makes readers immediately curious (not a topic label but a finding statement)\n'
-    +'- Examples of GOOD titles: "每周饮酒超3杯脑容量缩小6%" "失眠72小时后大脑自噬机制停摆" "肠道菌群决定你85%的情绪状态"\n'
-    +'- Examples of BAD titles: "微塑料研究" "睡眠与健康" "肠道菌群的作用"\n\n'
-    +'For EACH paper scoring above 60 total, output EXACTLY one line:\n'
-    +'TOPIC|Punchy Chinese headline with data max 20 chars|English title|triggers|Journal Year|TotalScore|Extremity|Urgency|ChallengesBelief|HiddenProcess|VividNumbers|AudienceBreadth|Freshness|pending|CategoryKeyword|safe or warn|PaperNumber\n\n'
+  var prompt='Evaluate these papers for YouTube/TikTok health science impact. Output ALL papers scoring above 55.\n\n'
+    +'7-DIMENSION SCORING (total 100 points):\n\n'
+    +'1. PersonalStakes(20): Rate by affected population SIZE x personal pain intensity.\n'
+    +'   - Cancer/diabetes/Alzheimer/heart disease patients+families globally: 16-20\n'
+    +'   - Widespread chronic conditions affecting millions: 12-15\n'
+    +'   - General population environmental exposure: 8-11\n'
+    +'   - Niche or specific subgroup only: 4-7\n\n'
+    +'2. HopeOrActionValue(15): Does this offer hope, reversal, prevention, or clear action?\n'
+    +'   - Proven reversal or prevention with clear mechanism: 13-15\n'
+    +'   - New treatment approach or strong risk reduction finding: 9-12\n'
+    +'   - Explains mechanism but no actionable path: 5-8\n'
+    +'   - Pure harm finding with no mitigation: 1-4\n\n'
+    +'3. Extremity(15): How shocking is the conclusion to a layperson?\n'
+    +'   - Completely overturns common belief with large effect size: 13-15\n'
+    +'   - Surprising finding that challenges assumptions: 8-12\n'
+    +'   - Confirms concerns people already had: 4-7\n\n'
+    +'4. Urgency(15): Is harm or benefit happening NOW, unnoticed, irreversible?\n'
+    +'   - Ongoing hidden harm that is irreversible: 13-15\n'
+    +'   - Time-sensitive intervention window: 8-12\n'
+    +'   - General long-term concern: 4-7\n\n'
+    +'5. VividNumbers(15): Are there specific numbers that translate to shocking everyday comparisons?\n'
+    +'   - Clear percentage, ratio, or quantity with obvious everyday parallel: 13-15\n'
+    +'   - Some quantitative data but requires interpretation: 7-12\n'
+    +'   - Only statistical terms (p-value, hazard ratio) without intuitive meaning: 1-6\n\n'
+    +'6. EvidenceQuality(15): What is the research stage? (AI can read this from abstract)\n'
+    +'   - Large human RCT or systematic review of RCTs: 13-15\n'
+    +'   - Human observational cohort study n>1000: 9-12\n'
+    +'   - Small human study or large animal study: 5-8\n'
+    +'   - Animal only or cell culture only: 1-4\n\n'
+    +'7. TopicRarity(5): Is this topic angle rarely seen in health science media?\n'
+    +'   - Genuinely novel angle not commonly covered: 4-5\n'
+    +'   - Somewhat fresh: 2-3\n'
+    +'   - Microplastics/sleep deprivation/gut microbiome general: 0-1\n\n'
+    +'DIVERSITY RULE: If 3+ papers share same CategoryKeyword, cap TopicRarity at 1 for all but the top scorer.\n\n'
+    +'EXCLUDE: specific drug brand recommendations, unverified cure claims, pure alternative medicine.\n'
+    +'safe = usable with "research found/suggests" framing\n'
+    +'warn = animal study only, very small n, or preliminary mechanism only\n\n'
+    +'CHINESE TITLE RULES - punchy ONE-LINE finding statement with specific data:\n'
+    +'GOOD: "II型糖尿病患者86%通过饮食逆转停药" "每天30分钟步行降低41%阿尔茨海默风险" "睡眠不足6小时心脏病风险增加200%"\n'
+    +'BAD: "微塑料危害研究" "睡眠与健康关系" "癌症新发现"\n'
+    +'The title must state the FINDING, not the topic. Include numbers when available.\n\n'
+    +'For EACH paper scoring above 55, output EXACTLY one line:\n'
+    +'TOPIC|Chinese headline max 24 chars|English title|triggers|Journal Year|TotalScore|PersonalStakes|HopeAction|Extremity|Urgency|VividNumbers|EvidenceQuality|TopicRarity|CategoryKeyword|safe or warn|PaperNumber\n\n'
     +'PAPERS:\n'+paperList;
 
   try{
@@ -1209,15 +1240,21 @@ function parseTopics(text,papers){
     if(ti<0)return;
     line=line.slice(ti);
     var p=line.split('|');
-    if(p.length<11)return;
-    var s1=parseInt(p[6])||0,s2=parseInt(p[7])||0,s3=parseInt(p[8])||0;
-    var s4=parseInt(p[9])||0,s5=parseInt(p[10])||0;
-    var s6=parseInt(p[11])||0,s7=parseInt(p[12])||0;
+    if(p.length<12)return;
+    // Fields: TOPIC|title|en_title|triggers|journal year|total|s1|s2|s3|s4|s5|s6|s7|category|safe/warn|paperNum
+    var s1=parseInt(p[6])||0;   // PersonalStakes/20
+    var s2=parseInt(p[7])||0;   // HopeAction/15
+    var s3=parseInt(p[8])||0;   // Extremity/15
+    var s4=parseInt(p[9])||0;   // Urgency/15
+    var s5=parseInt(p[10])||0;  // VividNumbers/15
+    var s6=parseInt(p[11])||0;  // EvidenceQuality/15
+    var s7=parseInt(p[12])||0;  // TopicRarity/5
     var total=parseInt(p[5])||(s1+s2+s3+s4+s5+s6+s7);
     if(total<55)return;
-    var pidx=parseInt(p[16])-1;
+    var catKey=(p[13]||'').trim();
+    var sl=(p[14]||'safe').trim().toLowerCase();
+    var pidx=parseInt(p[15])-1;
     var src=(papers&&papers[pidx])?papers[pidx]:null;
-    var sl=(p[15]||'safe').trim().toLowerCase();
     topics.push({
       title:p[1]||'',
       english_title:p[2]||'',
@@ -1225,7 +1262,7 @@ function parseTopics(text,papers){
       paper:p[4]||'',
       total:total,
       scores:{s1:s1,s2:s2,s3:s3,s4:s4,s5:s5,s6:s6,s7:s7},
-      category:p[14]||'',
+      category:catKey,
       safety_level:sl.indexOf('warn')>=0?'warn':'safe',
       srcPaper:src
     });
@@ -1233,135 +1270,6 @@ function parseTopics(text,papers){
   return topics;
 }
 
-/* ═══════════════════════════════════════════
-   MAIN SEARCH
-═══════════════════════════════════════════ */
-async function doSearch(){
-  var q=document.getElementById('searchInput').value.trim();
-  var isManual=q.length>0;
-  document.getElementById('discoverResults').style.display='none';
-  document.getElementById('discoverLoading').style.display='block';
-  document.getElementById('searchBtn').disabled=true;
-
-  function setMsg(m,s){
-    document.getElementById('loadMsg').textContent=m;
-    document.getElementById('loadStep').textContent=s||'';
-  }
-
-  try{
-    dbg('=== START doSearch isManual='+isManual+' q='+q);
-
-    /* Phase 1: fetch papers */
-    if(!isManual){
-      setMsg('检查今日抓取任务...','');
-      await runDailyCrawl(function(status,data){
-        dbg('crawl '+status+'='+JSON.stringify(data));
-        if(status==='done_today')setMsg('今日已完成抓取','从论文库直接评分');
-        else if(status==='start')setMsg('执行今日抓取...','');
-        else if(status==='fetch')setMsg('正在抓取论文...','方向: '+(typeof data==='string'?data.slice(0,50):JSON.stringify(data)));
-        else if(status==='fetch_done')setMsg('抓取完成',''+data);
-        else if(status==='fetch_err')setMsg('抓取出错',''+data);
-        else if(status==='complete')setMsg('完成','新增'+data.added+'篇');
-      });
-    }else{
-      setMsg('搜索论文: '+q,'');
-      try{
-        var mp=await fetchPapersViaClaude(
-          [q+' humans health surprising counterintuitive findings'],
-          'recent 2023-2025 publications'
-        );
-        dbg('manual fetch got '+mp.length+' papers');
-        if(mp.length>0){
-          await addPapers(mp);
-          setMsg('已抓取','找到'+mp.length+'篇相关论文');
-        }else{
-          setMsg('未找到相关论文','从已有论文库评分');
-        }
-      }catch(e){
-        dbg('manual fetch err: '+e.message);
-        setMsg('抓取失败','从已有论文库评分');
-      }
-    }
-
-    /* Phase 2: score */
-    var stats=await getStats();
-    dbg('stats: total='+stats.total+' scored='+stats.scored+' unscored='+stats.unscored);
-    setMsg('AI评分中...','库存'+stats.total+'篇 未评'+stats.unscored+'篇');
-
-    var allTopics=[];
-
-    /* First batch */
-    var batch1=await getUnscored(SCORE_N);
-    dbg('batch1 count='+batch1.length);
-    if(batch1.length>0){
-      var r1=await scoreNextBatch(batch1);
-      var p1=parseTopics(r1.text,r1.papers);
-      dbg('batch1 parsed='+p1.length);
-      allTopics=allTopics.concat(p1);
-    }
-
-    /* Second batch if needed */
-    if(allTopics.length<4){
-      var batch2=await getUnscored(SCORE_N);
-      dbg('batch2 count='+batch2.length);
-      if(batch2.length>0){
-        setMsg('扩大评分范围...','');
-        var r2=await scoreNextBatch(batch2);
-        var p2=parseTopics(r2.text,r2.papers);
-        dbg('batch2 parsed='+p2.length);
-        allTopics=allTopics.concat(p2);
-      }
-    }
-
-    /* Fallback: re-score most recent papers */
-    if(allTopics.length===0){
-      var db=await getPaperDB();
-      var sample=db.papers.slice(-SCORE_N);
-      dbg('fallback sample='+sample.length);
-      if(sample.length>0){
-        setMsg('重新评分最新论文...','');
-        var r3=await scoreNextBatch(sample);
-        allTopics=parseTopics(r3.text,r3.papers);
-        dbg('fallback parsed='+allTopics.length);
-      }
-    }
-
-    document.getElementById('discoverLoading').style.display='none';
-    document.getElementById('searchBtn').disabled=false;
-    dbg('FINAL topics='+allTopics.length);
-
-    if(allTopics.length===0){
-      showErr('暂无高分选题。<br>调试日志见上方，请截图发给开发者。');
-      return;
-    }
-
-    stats=await getStats();
-    renderTopics(allTopics,stats);
-    document.getElementById('discoverHero').classList.add('compact');
-
-  }catch(e){
-    dbg('CAUGHT ERROR: '+e.message);
-    document.getElementById('discoverLoading').style.display='none';
-    document.getElementById('searchBtn').disabled=false;
-    showErr('错误: '+e.message);
-  }
-}
-
-/* ═══════════════════════════════════════════
-   FORCE REFETCH
-═══════════════════════════════════════════ */
-async function forceRefetch(){
-  var s=await getCrawlState();
-  s.lastRun=null;
-  await stSet(SK_STATE,s);
-  await stSet(SK_SCORED,{});
-  dbg('Force refetch: cleared crawl state and scored db');
-  doSearch();
-}
-
-/* ═══════════════════════════════════════════
-   SHOW ERROR
-═══════════════════════════════════════════ */
 function showErr(msg){
   document.getElementById('discoverResults').style.display='block';
   document.getElementById('topicList').innerHTML=
@@ -1375,45 +1283,82 @@ function showErr(msg){
 ═══════════════════════════════════════════ */
 function renderTopics(topics,stats){
   topics.sort(function(a,b){return b.total-a.total;});
+  // Diversity cap: same category keyword max 2 entries at full score
+  var catCount={};
+  topics.forEach(function(t){
+    var cat=(t.category||'other').toLowerCase().replace(/[^a-z]/g,'');
+    catCount[cat]=(catCount[cat]||0)+1;
+    t._catRank=catCount[cat];
+  });
+  // Re-sort after capping: demote 3rd+ entries of same category
+  topics.sort(function(a,b){
+    var as=a._catRank>2?a.total-15:a.total;
+    var bs=b._catRank>2?b.total-15:b.total;
+    return bs-as;
+  });
+  // Limit to 60
+  topics=topics.slice(0,60);
   window._topics=topics;
-  var si=stats?(' <span style="color:var(--text3);font-size:11px">库'+stats.total+'篇|待评'+stats.unscored+'</span>'):'';
+
+  var si=stats?(' <span style="color:var(--text3);font-size:11px">库'+stats.total+'篇|待'+stats.unscored+'</span>'):'';
   document.getElementById('resultsCount').innerHTML='共'+topics.length+'条'+si;
-  document.getElementById('topicList').innerHTML=topics.map(function(t,i){
-    var scoreColor=t.total>=75?'var(--green)':t.total>=60?'var(--amber)':'var(--text2)';
+
+  // 3-column grid
+  var cols=[[],[],[]];
+  topics.forEach(function(t,i){cols[i%3].push({t:t,i:i});});
+
+  function renderItem(t,i){
+    var scoreColor=t.total>=80?'var(--green)':t.total>=65?'var(--amber)':'var(--text2)';
     var pm=(t.srcPaper&&t.srcPaper.pmid&&t.srcPaper.pmid.match(/^[0-9]+$/))
-      ?'<a href="https://pubmed.ncbi.nlm.nih.gov/'+t.srcPaper.pmid+'/" target="_blank" style="color:var(--accent);font-size:11px;text-decoration:none;margin-right:6px;flex-shrink:0" onclick="event.stopPropagation()">&#8599;</a>':'';
+      ?'<a href="https://pubmed.ncbi.nlm.nih.gov/'+t.srcPaper.pmid+'/" target="_blank" style="color:var(--accent);font-size:10px;text-decoration:none;flex-shrink:0;margin-right:4px" onclick="event.stopPropagation()">↗</a>':'';
+    var warnIcon=t.safety_level==='warn'?'<span style="color:var(--amber);font-size:10px;flex-shrink:0;margin-right:3px">⚠</span>':'';
     var s=t.scores||{};
-    var scoreGrid='<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:4px;margin-bottom:10px">'
-      +'<div style="text-align:center;background:var(--surface2);border-radius:5px;padding:4px"><b style="color:var(--red)">'+(s.s1||0)+'</b><div style="font-size:9px;color:var(--text3)">极端/20</div></div>'
-      +'<div style="text-align:center;background:var(--surface2);border-radius:5px;padding:4px"><b style="color:var(--amber)">'+(s.s2||0)+'</b><div style="font-size:9px;color:var(--text3)">紧迫/20</div></div>'
-      +'<div style="text-align:center;background:var(--surface2);border-radius:5px;padding:4px"><b style="color:var(--accent)">'+(s.s3||0)+'</b><div style="font-size:9px;color:var(--text3)">信念/15</div></div>'
-      +'<div style="text-align:center;background:var(--surface2);border-radius:5px;padding:4px"><b style="color:var(--teal)">'+(s.s4||0)+'</b><div style="font-size:9px;color:var(--text3)">隐藏/15</div></div>'
-      +'<div style="text-align:center;background:var(--surface2);border-radius:5px;padding:4px"><b style="color:var(--green)">'+(s.s5||0)+'</b><div style="font-size:9px;color:var(--text3)">数字/10</div></div>'
-      +'<div style="text-align:center;background:var(--surface2);border-radius:5px;padding:4px"><b style="color:var(--text2)">'+(s.s6||0)+'</b><div style="font-size:9px;color:var(--text3)">受众/10</div></div>'
-      +'<div style="text-align:center;background:var(--surface2);border-radius:5px;padding:4px"><b style="color:var(--text2)">'+(s.s7||0)+'</b><div style="font-size:9px;color:var(--text3)">新鲜/10</div></div>'
-      +'<div style="text-align:center;background:var(--surface2);border-radius:5px;padding:4px;opacity:0.3"><b style="font-size:9px;color:var(--text3)">TBD</b><div style="font-size:9px;color:var(--text3)">竞争</div></div>'
+    var scoreGrid='<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:3px;margin-bottom:8px">'
+      +'<div style="text-align:center;background:var(--bg);border-radius:4px;padding:3px"><b style="color:var(--green);font-size:12px">'+(s.s1||0)+'</b><div style="font-size:8px;color:var(--text3)">切身/20</div></div>'
+      +'<div style="text-align:center;background:var(--bg);border-radius:4px;padding:3px"><b style="color:var(--teal);font-size:12px">'+(s.s2||0)+'</b><div style="font-size:8px;color:var(--text3)">希望/15</div></div>'
+      +'<div style="text-align:center;background:var(--bg);border-radius:4px;padding:3px"><b style="color:var(--red);font-size:12px">'+(s.s3||0)+'</b><div style="font-size:8px;color:var(--text3)">极端/15</div></div>'
+      +'<div style="text-align:center;background:var(--bg);border-radius:4px;padding:3px"><b style="color:var(--amber);font-size:12px">'+(s.s4||0)+'</b><div style="font-size:8px;color:var(--text3)">紧迫/15</div></div>'
+      +'<div style="text-align:center;background:var(--bg);border-radius:4px;padding:3px"><b style="color:var(--accent);font-size:12px">'+(s.s5||0)+'</b><div style="font-size:8px;color:var(--text3)">数字/15</div></div>'
+      +'<div style="text-align:center;background:var(--bg);border-radius:4px;padding:3px"><b style="color:var(--text2);font-size:12px">'+(s.s6||0)+'</b><div style="font-size:8px;color:var(--text3)">证据/15</div></div>'
+      +'<div style="text-align:center;background:var(--bg);border-radius:4px;padding:3px"><b style="color:var(--text3);font-size:12px">'+(s.s7||0)+'</b><div style="font-size:8px;color:var(--text3)">稀缺/5</div></div>'
       +'</div>';
-    var detail='<div id="td-'+i+'" style="display:none;padding:12px 14px 4px;border-top:1px solid var(--border)">'
-      +(t.english_title?'<div style="font-size:12px;color:var(--text2);margin-bottom:6px;font-style:italic">"'+t.english_title+'"</div>':'')
-      +(t.srcPaper&&t.srcPaper.title?'<div style="font-size:11px;color:var(--text3);margin-bottom:8px;line-height:1.5">原文: '+(t.srcPaper.title.length>120?t.srcPaper.title.slice(0,120)+'...':t.srcPaper.title)+'</div>':'')
-      +(t.srcPaper&&t.srcPaper.abstract?'<div style="font-size:11px;color:var(--text3);margin-bottom:8px;line-height:1.6">'+t.srcPaper.abstract.slice(0,200)+'...</div>':'')
+    var detail='<div id="td-'+i+'" style="display:none;padding:10px 12px 4px;border-top:1px solid var(--border);background:var(--bg)">'
+      +(t.english_title?'<div style="font-size:11px;color:var(--text2);margin-bottom:5px;font-style:italic">"'+t.english_title+'"</div>':'')
+      +(t.srcPaper&&t.srcPaper.title?'<div style="font-size:10px;color:var(--text3);margin-bottom:6px;line-height:1.4">'+(t.srcPaper.title.length>100?t.srcPaper.title.slice(0,100)+'...':t.srcPaper.title)+'</div>':'')
+      +(t.srcPaper&&t.srcPaper.abstract?'<div style="font-size:10px;color:var(--text3);margin-bottom:8px;line-height:1.5">'+t.srcPaper.abstract.slice(0,180)+'...</div>':'')
       +scoreGrid
-      +(t.safety_level==='warn'?'<div style="font-size:11px;color:var(--amber);margin-bottom:8px">&#9888; 需谨慎措辞，生成时自动套用谨慎模板</div>':'')
-      +'<button onclick="event.stopPropagation();selectTopic('+i+')" style="width:100%;padding:9px;background:var(--accent);color:#fff;border:none;border-radius:8px;font-size:13px;font-weight:700;cursor:pointer;margin-bottom:10px">选择此题材 &rarr;</button>'
+      +(t.safety_level==='warn'?'<div style="font-size:10px;color:var(--amber);margin-bottom:6px">⚠ 需谨慎措辞，生成时自动套用谨慎模板</div>':'')
+      +'<button onclick="event.stopPropagation();selectTopic('+i+')" style="width:100%;padding:7px;background:var(--accent);color:#fff;border:none;border-radius:6px;font-size:12px;font-weight:700;cursor:pointer;margin-bottom:8px">选择此题材 →</button>'
       +'</div>';
-    return '<div>'
-      +'<div class="trow" style="display:flex;align-items:center;padding:9px 14px;border-bottom:1px solid var(--border);cursor:pointer;gap:8px" '
-      +'onclick="toggleDetail('+i+',event)">'
-      +'<span style="font-size:13px;font-weight:800;color:'+scoreColor+';min-width:30px;text-align:right;flex-shrink:0">'+t.total+'</span>'
-      +pm
-      +(t.safety_level==='warn'?'<span style="color:var(--amber);font-size:11px;flex-shrink:0">&#9888;</span>':'')
-      +'<span style="font-size:14px;font-weight:600;flex:1;line-height:1.4">'+t.title+'</span>'
-      +'<span style="font-size:10px;color:var(--text3);flex-shrink:0;font-family:DM Mono,monospace;margin-left:6px">'+t.paper.slice(0,20)+'</span>'
-      +'<span id="ta-'+i+'" style="color:var(--text3);font-size:11px;flex-shrink:0;margin-left:4px">&#9660;</span>'
+    return '<div style="border-bottom:1px solid var(--border)">'
+      +'<div class="trow" style="display:flex;align-items:center;padding:7px 10px;cursor:pointer;gap:6px" onclick="toggleDetail('+i+',event)">'
+      +'<span style="font-size:12px;font-weight:800;color:'+scoreColor+';min-width:26px;text-align:right;flex-shrink:0">'+t.total+'</span>'
+      +pm+warnIcon
+      +'<span style="font-size:13px;font-weight:600;flex:1;line-height:1.3">'+t.title+'</span>'
+      +'<span style="font-size:9px;color:var(--text3);flex-shrink:0;font-family:DM Mono,monospace">'+t.paper.slice(0,18)+'</span>'
+      +'<span id="ta-'+i+'" style="color:var(--text3);font-size:10px;flex-shrink:0;margin-left:3px">▼</span>'
       +'</div>'
       +detail
       +'</div>';
-  }).join('');
+  }
+
+  var html='<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:0;border:1px solid var(--border);border-radius:10px;overflow:hidden">';
+  var maxRows=Math.ceil(topics.length/3);
+  for(var row=0;row<maxRows;row++){
+    for(var col=0;col<3;col++){
+      var item=cols[col][row];
+      if(item){
+        html+='<div style="border-right:'+(col<2?'1px solid var(--border)':'none')+'">'
+          +renderItem(item.t,item.i)
+          +'</div>';
+      }else{
+        html+='<div></div>';
+      }
+    }
+  }
+  html+='</div>';
+
+  document.getElementById('topicList').innerHTML=html;
   document.getElementById('discoverResults').style.display='block';
 }
 
