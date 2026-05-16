@@ -1045,60 +1045,31 @@ async function fetchPubMedReal(kw,dStart,dEnd){
 }
 
 async function fetchPapersViaClaude(dirs,wl){
-  // PRIORITY 1: PubMed Vercel Proxy (newest real papers)
-  var allPapers=[];
-  var dirs5=dirs.slice(0,5);
-
-  async function tryPubMedProxy(){
-    for(var di=0;di<dirs5.length;di++){
-      try{
-        var pp=await fetchPubMedProxy(dirs5[di],0,60);
-        if(pp.length>0){allPapers=allPapers.concat(pp);dbg('PubMed-Proxy['+di+']: '+pp.length);}
-        await new Promise(function(r){setTimeout(r,150);});
-      }catch(ex){dbg('Proxy['+di+']: '+ex.message.slice(0,40));}
-    }
-  }
-
-  async function trySemanticScholar(){
-    for(var di=0;di<Math.min(3,dirs5.length);di++){
-      try{
-        var ss=await fetchSemanticScholar(dirs5[di]);
-        if(ss.length>0){allPapers=allPapers.concat(ss);dbg('SS['+di+']: '+ss.length);}
-      }catch(ex){dbg('SS['+di+']: '+ex.message.slice(0,40));}
-    }
-  }
-
-  async function tryEuropePMC(){
-    try{
-      var ep=await fetchEuropePMC(dirs5[0]);
-      if(ep.length>0){allPapers=allPapers.concat(ep);dbg('EuropePMC: '+ep.length);}
-    }catch(ex){dbg('EPMC: '+ex.message.slice(0,40));}
-  }
-
-  await tryPubMedProxy();
-  if(allPapers.length<15) await trySemanticScholar();
-  if(allPapers.length<15) await tryEuropePMC();
-
-  if(allPapers.length>0){
-    var seen={};var unique=[];
-    allPapers.forEach(function(p){
-      var k=(p.title||'').slice(0,30).toLowerCase().replace(/[^a-z0-9]/g,'');
-      if(k&&!seen[k]){seen[k]=true;unique.push(p);}
-    });
-    dbg('Real DB unique: '+unique.length);
-    return unique;
-  }
-
-  // LAST RESORT: Claude recall
-  dbg('Real sources failed, using Claude recall');
-  var sys='You are a biomedical literature expert. Output ONLY lines that start with PAPER|. No other text.';
+  var sys='You are a biomedical literature expert. Output ONLY lines that start with PAPER|. Absolutely no other text, no introduction, no commentary.';
   var prompt='List 15 real peer-reviewed papers about: '+dirs.join(', ')+'\n'
-    +'Focus: '+wl+'. Papers must have surprising or counterintuitive findings.\n'
-    +'Output one line per paper: PAPER|Full title|Journal|Year|PMID or 0|Key finding\n'
-    +'Example: PAPER|Microplastics in Human Testes|Toxicol Sci|2024|38346234|Found in all 23 samples\n'
-    +'List 15 real papers now:';
-  var text=await callClaude(sys,prompt,2500);
-  dbg('Claude recall (200): '+text.slice(0,200));
+    +'Focus: '+wl+'\n'
+    +'Papers must have surprising, counterintuitive, or impactful findings.\n\n'
+    +'Output format - one line per paper, pipe-separated, NO other text:\n'
+    +'PAPER|Full title of paper|Journal|Year|PMID or 0|One sentence summary of key finding\n\n'
+    +'Example output:\n'
+    +'PAPER|Microplastics Found in Human Testicular Tissue|Toxicological Sciences|2024|38346234|Microplastics detected in all 23 human testes samples tested\n'
+    +'PAPER|Sleep Deprivation Accelerates Alzheimer Protein Buildup|Science|2023|37437520|One night of sleep loss increases amyloid-beta by 17 percent\n\n'
+    +'Now list 15 real papers following this exact format:';
+
+  var res=await fetch('https://api.anthropic.com/v1/messages',{
+    method:'POST',
+    headers:{'Content-Type':'application/json'},
+    body:JSON.stringify({
+      model:'claude-sonnet-4-20250514',
+      max_tokens:2500,
+      system:sys,
+      messages:[{role:'user',content:prompt}]
+    })
+  });
+  var data=await res.json();
+  var text='';
+  if(data.content&&data.content[0]&&data.content[0].text)text=data.content[0].text;
+  dbg('fetchPapers raw (200 chars): '+text.slice(0,200));
   return parsePaperLines(text);
 }
 
@@ -1141,16 +1112,8 @@ async function runDailyCrawl(onStatus){
   var stats=await getStats();
   if(s.lastRun===today&&stats.total>0){onStatus('done_today',s);return s;}
   onStatus('start',s);
-  // Pick 5 random directions for maximum diversity
   var dirs=[];
-  var used={};
-  var seed=Math.floor(Date.now()/86400000); // changes daily
-  for(var i=0;i<5;i++){
-    var idx=Math.floor((seed*7+i*13+s.dirIdx*3)%ALL_DIRS.length);
-    if(used[idx]){idx=(idx+7)%ALL_DIRS.length;}
-    used[idx]=true;
-    dirs.push(ALL_DIRS[idx]);
-  }
+  for(var i=0;i<3;i++)dirs.push(ALL_DIRS[(s.dirIdx+i)%ALL_DIRS.length]);
   onStatus('fetch',dirs.join(' + '));
   var all=[];
   try{
@@ -1166,72 +1129,192 @@ async function runDailyCrawl(onStatus){
   return s;
 }
 
+/* ── MAIN SEARCH ── */
+async function doSearch(){
+  var q=document.getElementById('searchInput').value.trim();
+  var isManual=q.length>0;
+  document.getElementById('discoverResults').style.display='none';
+  document.getElementById('discoverLoading').style.display='block';
+  document.getElementById('searchBtn').disabled=true;
+
+  function setMsg(m,s){
+    document.getElementById('loadMsg').textContent=m;
+    document.getElementById('loadStep').textContent=s||'';
+  }
+
+  try{
+    dbg('=== START doSearch isManual='+isManual+' q='+q);
+
+    /* Phase 1: fetch papers */
+    if(!isManual){
+      setMsg('检查今日抓取任务...','');
+      await runDailyCrawl(function(status,data){
+        dbg('crawl '+status+'='+JSON.stringify(data));
+        if(status==='done_today')setMsg('今日已完成抓取','从论文库直接评分');
+        else if(status==='start')setMsg('执行今日抓取...','');
+        else if(status==='fetch')setMsg('正在抓取论文...','方向: '+(typeof data==='string'?data.slice(0,50):JSON.stringify(data)));
+        else if(status==='fetch_done')setMsg('抓取完成',''+data);
+        else if(status==='fetch_err')setMsg('抓取出错',''+data);
+        else if(status==='complete')setMsg('完成','新增'+data.added+'篇');
+      });
+    }else{
+      setMsg('搜索论文: '+q,'');
+      try{
+        var mp=await fetchPapersViaClaude(
+          [q+' humans health surprising counterintuitive findings'],
+          'recent 2023-2025 publications'
+        );
+        dbg('manual fetch got '+mp.length+' papers');
+        if(mp.length>0){
+          await addPapers(mp);
+          setMsg('已抓取','找到'+mp.length+'篇相关论文');
+        }else{
+          setMsg('未找到相关论文','从已有论文库评分');
+        }
+      }catch(e){
+        dbg('manual fetch err: '+e.message);
+        setMsg('抓取失败','从已有论文库评分');
+      }
+    }
+
+    /* Phase 2: score */
+    var stats=await getStats();
+    dbg('stats: total='+stats.total+' scored='+stats.scored+' unscored='+stats.unscored);
+    setMsg('AI评分中...','库存'+stats.total+'篇 未评'+stats.unscored+'篇');
+
+    var allTopics=[];
+
+    /* First batch */
+    var batch1=await getUnscored(SCORE_N);
+    dbg('batch1 count='+batch1.length);
+    if(batch1.length>0){
+      var r1=await scoreNextBatch(batch1);
+      var p1=parseTopics(r1.text,r1.papers);
+      dbg('batch1 parsed='+p1.length);
+      allTopics=allTopics.concat(p1);
+    }
+
+    /* Second batch if needed */
+    if(allTopics.length<4){
+      var batch2=await getUnscored(SCORE_N);
+      dbg('batch2 count='+batch2.length);
+      if(batch2.length>0){
+        setMsg('扩大评分范围...','');
+        var r2=await scoreNextBatch(batch2);
+        var p2=parseTopics(r2.text,r2.papers);
+        dbg('batch2 parsed='+p2.length);
+        allTopics=allTopics.concat(p2);
+      }
+    }
+
+    /* Fallback: re-score most recent papers */
+    if(allTopics.length===0){
+      var db=await getPaperDB();
+      var sample=db.papers.slice(-SCORE_N);
+      dbg('fallback sample='+sample.length);
+      if(sample.length>0){
+        setMsg('重新评分最新论文...','');
+        var r3=await scoreNextBatch(sample);
+        allTopics=parseTopics(r3.text,r3.papers);
+        dbg('fallback parsed='+allTopics.length);
+      }
+    }
+
+    document.getElementById('discoverLoading').style.display='none';
+    document.getElementById('searchBtn').disabled=false;
+    dbg('FINAL topics='+allTopics.length);
+
+    if(allTopics.length===0){
+      showErr('暂无高分选题。<br>调试日志见上方，请截图发给开发者。');
+      return;
+    }
+
+    stats=await getStats();
+    renderTopics(allTopics,stats);
+    document.getElementById('discoverHero').classList.add('compact');
+
+  }catch(e){
+    dbg('CAUGHT ERROR: '+e.message);
+    document.getElementById('discoverLoading').style.display='none';
+    document.getElementById('searchBtn').disabled=false;
+    showErr('错误: '+e.message);
+  }
+}
+
 /* ═══════════════════════════════════════════
-   AI SCORING BATCH
+   FORCE REFETCH
 ═══════════════════════════════════════════ */
+async function forceRefetch(){
+  var s=await getCrawlState();
+  s.lastRun=null;
+  await stSet(SK_STATE,s);
+  // Also clear scored db so papers get re-evaluated
+  await stSet(SK_SCORED,{});
+  dbg('Force refetch: cleared state and scored db');
+  doSearch();
+}
+
+/* ── AI SCORING ── */
 async function scoreNextBatch(papers){
   var sep='\n---\n';
   var paperList=papers.map(function(p,i){
-    return '['+String(i+1)+'] TITLE: '+p.title+' | JOURNAL: '+p.journal+' '+p.year+' | FINDING: '+p.abstract;
+    return '['+String(i+1)+'] TITLE: '+p.title+' | JOURNAL: '+p.journal+' '+p.year+' | ABSTRACT: '+p.abstract;
   }).join(sep);
 
   var sys='You are a science communication expert. Output ONLY lines starting with TOPIC|. Zero other text.';
   var prompt='Evaluate these papers for YouTube/TikTok health science impact. Output ALL papers scoring above 55.\n\n'
     +'7-DIMENSION SCORING (total 100 points):\n\n'
     +'1. PersonalStakes(20): Rate by affected population SIZE x personal pain intensity.\n'
-    +'   - Cancer/diabetes/Alzheimer/heart disease patients+families globally: 16-20\n'
-    +'   - Widespread chronic conditions affecting millions: 12-15\n'
-    +'   - General population environmental exposure: 8-11\n'
-    +'   - Niche or specific subgroup only: 4-7\n\n'
+    +'   Cancer/diabetes/Alzheimer/heart disease patients+families globally: 16-20\n'
+    +'   Widespread chronic conditions affecting millions: 12-15\n'
+    +'   General population environmental exposure: 8-11\n'
+    +'   Niche or specific subgroup only: 4-7\n\n'
     +'2. HopeOrActionValue(15): Does this offer hope, reversal, prevention, or clear action?\n'
-    +'   - Proven reversal or prevention with clear mechanism: 13-15\n'
-    +'   - New treatment approach or strong risk reduction finding: 9-12\n'
-    +'   - Explains mechanism but no actionable path: 5-8\n'
-    +'   - Pure harm finding with no mitigation: 1-4\n\n'
+    +'   Proven reversal or prevention with clear mechanism: 13-15\n'
+    +'   New treatment approach or strong risk reduction finding: 9-12\n'
+    +'   Explains mechanism but no actionable path: 5-8\n'
+    +'   Pure harm finding with no mitigation: 1-4\n\n'
     +'3. Extremity(15): How shocking is the conclusion to a layperson?\n'
-    +'   - Completely overturns common belief with large effect size: 13-15\n'
-    +'   - Surprising finding that challenges assumptions: 8-12\n'
-    +'   - Confirms concerns people already had: 4-7\n\n'
+    +'   Completely overturns common belief with large effect size: 13-15\n'
+    +'   Surprising finding that challenges assumptions: 8-12\n'
+    +'   Confirms concerns people already had: 4-7\n\n'
     +'4. Urgency(15): Is harm or benefit happening NOW, unnoticed, irreversible?\n'
-    +'   - Ongoing hidden harm that is irreversible: 13-15\n'
-    +'   - Time-sensitive intervention window: 8-12\n'
-    +'   - General long-term concern: 4-7\n\n'
-    +'5. VividNumbers(15): Are there specific numbers that translate to shocking everyday comparisons?\n'
-    +'   - Clear percentage, ratio, or quantity with obvious everyday parallel: 13-15\n'
-    +'   - Some quantitative data but requires interpretation: 7-12\n'
-    +'   - Only statistical terms (p-value, hazard ratio) without intuitive meaning: 1-6\n\n'
-    +'6. EvidenceQuality(15): What is the research stage? (AI can read this from abstract)\n'
-    +'   - Large human RCT or systematic review of RCTs: 13-15\n'
-    +'   - Human observational cohort study n>1000: 9-12\n'
-    +'   - Small human study or large animal study: 5-8\n'
-    +'   - Animal only or cell culture only: 1-4\n\n'
+    +'   Ongoing hidden harm that is irreversible: 13-15\n'
+    +'   Time-sensitive intervention window: 8-12\n'
+    +'   General long-term concern: 4-7\n\n'
+    +'5. VividNumbers(15): Are there specific numbers translatable to everyday comparisons?\n'
+    +'   Clear percentage or ratio with obvious everyday parallel: 13-15\n'
+    +'   Some quantitative data but requires interpretation: 7-12\n'
+    +'   Only statistical terms without intuitive meaning: 1-6\n\n'
+    +'6. EvidenceQuality(15): What is the research stage?\n'
+    +'   Large human RCT or systematic review of RCTs: 13-15\n'
+    +'   Human observational cohort study n>1000: 9-12\n'
+    +'   Small human study or large animal study: 5-8\n'
+    +'   Animal only or cell culture only: 1-4\n\n'
     +'7. TopicRarity(5): Is this topic angle rarely seen in health science media?\n'
-    +'   - Genuinely novel angle not commonly covered: 4-5\n'
-    +'   - Somewhat fresh: 2-3\n'
-    +'   - Microplastics/sleep deprivation/gut microbiome general: 0-1\n\n'
+    +'   Genuinely novel angle not commonly covered: 4-5\n'
+    +'   Somewhat fresh: 2-3\n'
+    +'   Microplastics/sleep deprivation/gut microbiome general: 0-1\n\n'
     +'DIVERSITY RULE: If 3+ papers share same CategoryKeyword, cap TopicRarity at 1 for all but the top scorer.\n\n'
     +'EXCLUDE: specific drug brand recommendations, unverified cure claims, pure alternative medicine.\n'
-    +'safe = usable with "research found/suggests" framing\n'
+    +'safe = usable with research found/suggests framing\n'
     +'warn = animal study only, very small n, or preliminary mechanism only\n\n'
-    +'CHINESE TITLE RULES - punchy ONE-LINE finding statement with specific data:\n'
-    +'GOOD: "II型糖尿病患者86%通过饮食逆转停药" "每天30分钟步行降低41%阿尔茨海默风险" "睡眠不足6小时心脏病风险增加200%"\n'
-    +'BAD: "微塑料危害研究" "睡眠与健康关系" "癌症新发现"\n'
-    +'The title must state the FINDING, not the topic. Include numbers when available.\n\n'
-    +'For EACH paper scoring above 55, output EXACTLY one line:\n'
+    +'CHINESE TITLE: punchy ONE-LINE finding statement with specific data.\n'
+    +'GOOD: "II型糖尿病患者86%通过饮食逆转停药" "每天30分钟步行降低41%阿尔茨海默风险"\n'
+    +'BAD: "微塑料危害研究" "睡眠与健康关系" "癌症新发现"\n\n'
+    +'Output format - one line per paper scoring above 55:\n'
     +'TOPIC|Chinese headline max 24 chars|English title|triggers|Journal Year|TotalScore|PersonalStakes|HopeAction|Extremity|Urgency|VividNumbers|EvidenceQuality|TopicRarity|CategoryKeyword|safe or warn|PaperNumber\n\n'
     +'PAPERS:\n'+paperList;
 
   try{
-    var text=await callClaude(sys,prompt,2000);
+    var text=await callClaude(sys,prompt,3000);
     dbg('scoreNextBatch raw (300): '+text.slice(0,300));
   }catch(e){dbg('score err: '+e.message);var text='';}
   await markScored(papers);
   return{text:text||'',papers:papers};
 }
 
-/* ═══════════════════════════════════════════
-   PARSE TOPIC LINES
-═══════════════════════════════════════════ */
+/* ── PARSE TOPICS ── */
 function parseTopics(text,papers){
   var topics=[];
   var lines=text.split('\n').map(function(l){return l.trim();});
@@ -1241,14 +1324,13 @@ function parseTopics(text,papers){
     line=line.slice(ti);
     var p=line.split('|');
     if(p.length<12)return;
-    // Fields: TOPIC|title|en_title|triggers|journal year|total|s1|s2|s3|s4|s5|s6|s7|category|safe/warn|paperNum
-    var s1=parseInt(p[6])||0;   // PersonalStakes/20
-    var s2=parseInt(p[7])||0;   // HopeAction/15
-    var s3=parseInt(p[8])||0;   // Extremity/15
-    var s4=parseInt(p[9])||0;   // Urgency/15
-    var s5=parseInt(p[10])||0;  // VividNumbers/15
-    var s6=parseInt(p[11])||0;  // EvidenceQuality/15
-    var s7=parseInt(p[12])||0;  // TopicRarity/5
+    var s1=parseInt(p[6])||0;
+    var s2=parseInt(p[7])||0;
+    var s3=parseInt(p[8])||0;
+    var s4=parseInt(p[9])||0;
+    var s5=parseInt(p[10])||0;
+    var s6=parseInt(p[11])||0;
+    var s7=parseInt(p[12])||0;
     var total=parseInt(p[5])||(s1+s2+s3+s4+s5+s6+s7);
     if(total<55)return;
     var catKey=(p[13]||'').trim();
@@ -1269,6 +1351,7 @@ function parseTopics(text,papers){
   });
   return topics;
 }
+
 
 function showErr(msg){
   document.getElementById('discoverResults').style.display='block';
@@ -1431,86 +1514,3 @@ async function generate(){
     +'### 1. YouTube Chinese Script (8-10 min)\n'
     +'Structure: Hook15s -> Background -> KeyFindings+Data -> WhyItMatters -> ScientificCaveats -> ActionTips -> Outro\n'
     +'Add *[Visual: ...]* for each section\n\n'
-    +'### 2. TikTok Chinese Script (60 seconds)\n'
-    +'Spoken style, max 12 chars per sentence, strongest hook first 3 seconds\n\n'
-    +'### 3. YouTube English Script (8-10 min)\n'
-    +'Same structure for English-speaking audience, include *[Visual: ...]*\n\n'
-    +'### 4. TikTok English Script (60 seconds)\n'
-    +'Casual punchy sentences, hook in first 3 seconds\n\n'
-    +'### 5. Image Prompts for Flux/Midjourney (3 images)\n'
-    +'---Cover 16:9---\n[prompt]\n---Data Infographic---\n[prompt]\n---Mechanism or Tips---\n[prompt]';
-
-  var outEl=document.getElementById('outputBox');
-  outEl.textContent='';outputFull='';
-  var key=getApiKey();
-  if(!key){showKeyModal();document.getElementById('genLoading').style.display='none';document.getElementById('genArea').style.display='block';return;}
-  document.getElementById('genLoading').style.display='none';
-  document.getElementById('outputArea').style.display='block';
-  try{
-    await callClaudeStream(
-      docStyle,
-      msg,
-      function(chunk){outputFull+=chunk;outEl.textContent=outputFull;outEl.scrollTop=outEl.scrollHeight;}
-    );
-    document.getElementById('wordCount').textContent='共'+outputFull.length+'字';
-  }catch(e){
-    document.getElementById('genLoading').style.display='none';
-    document.getElementById('genArea').style.display='block';
-    alert('生成出错：'+e.message);
-  }
-}
-function copyAll(){
-  var btn=document.getElementById('copyBtn');
-  navigator.clipboard.writeText(outputFull).then(function(){
-    btn.textContent='已复制';btn.classList.add('ok');
-    setTimeout(function(){btn.textContent='复制全部';btn.classList.remove('ok');},2000);
-  }).catch(function(){
-    var ta=document.createElement('textarea');
-    ta.value=outputFull;ta.style.cssText='position:fixed;opacity:0';
-    document.body.appendChild(ta);ta.select();document.execCommand('copy');
-    document.body.removeChild(ta);
-    btn.textContent='已复制';
-    setTimeout(function(){btn.textContent='复制全部';},2000);
-  });
-}
-
-/* ═══════════════════════════════════════════
-   PUBLISH CHECKLIST
-═══════════════════════════════════════════ */
-function buildChecklist(){
-  checkState={};
-  document.getElementById('checklistEl').innerHTML=CL.map(function(item){
-    return '<div class="check-item" id="ci_'+item.id+'" onclick="toggleCheck(\''+item.id+'\')"><div class="chk-box" id="cb_'+item.id+'"></div><div><div class="chk-label">'+item.l+'</div><div class="chk-desc">'+item.d+'</div></div></div>';
-  }).join('');
-  updProg();
-  document.getElementById('pubSuccess').style.display='none';
-}
-function toggleCheck(id){
-  checkState[id]=!checkState[id];
-  document.getElementById('ci_'+id).classList.toggle('done',!!checkState[id]);
-  document.getElementById('cb_'+id).textContent=checkState[id]?'✓':'';
-  updProg();
-}
-function updProg(){
-  var done=Object.values(checkState).filter(Boolean).length,total=CL.length;
-  document.getElementById('pubProg').style.width=(done/total*100)+'%';
-  document.getElementById('pubSub').textContent=done+' / '+total+' 完成';
-  document.getElementById('pubSuccess').style.display=done===total?'block':'none';
-}
-function newContent(){
-  selectedTopic=null;outputFull='';checkState={};window._topics=[];
-  document.getElementById('discoverHero').classList.remove('compact');
-  document.getElementById('discoverResults').style.display='none';
-  document.getElementById('discoverLoading').style.display='none';
-  document.getElementById('searchInput').value='';
-  nav('discover');
-}
-
-/* ═══════════════════════════════════════════
-   INIT
-═══════════════════════════════════════════ */
-initTags();buildChecklist();updateKeyStatus();
-
-</script>
-</body>
-</html>
