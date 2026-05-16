@@ -734,36 +734,75 @@ function updateKeyStatus(){
   else{el.style.color='var(--red)';el.textContent='⚠ 未设置API Key';}
 }
 
-/* ── OPENAI COMPATIBLE API ── */
+/* ── OPENAI COMPATIBLE API (via Vercel proxy to bypass CORS) ── */
+function getProxyUrl(){
+  // Use Vercel serverless proxy if available (production), else direct
+  var isVercel=window.location.hostname.indexOf('vercel.app')>=0
+    ||window.location.hostname.indexOf('vercel.com')>=0
+    ||(window.location.hostname!=='localhost'&&window.location.hostname!=='127.0.0.1'&&window.location.protocol==='https:');
+  return isVercel?'/api/ai':null;
+}
+
 async function callClaude(system,userMsg,maxTokens){
   var key=getApiKey();
   if(!key){showKeyModal();throw new Error('请先设置API Key');}
-  var url=getApiBase().replace(/\/+$/,'')+'/chat/completions';
-  var res=await fetch(url,{
-    method:'POST',
-    headers:{'Content-Type':'application/json','Authorization':'Bearer '+key},
-    body:JSON.stringify({
-      model:getApiModel(),max_tokens:maxTokens||2000,
-      messages:[{role:'system',content:system},{role:'user',content:userMsg}]
-    })
+  var proxy=getProxyUrl();
+  var body=JSON.stringify({
+    model:getApiModel(),max_tokens:maxTokens||2000,
+    messages:[{role:'system',content:system},{role:'user',content:userMsg}]
   });
+  var res;
+  if(proxy){
+    res=await fetch(proxy,{
+      method:'POST',
+      headers:{
+        'Content-Type':'application/json',
+        'x-api-key':key,
+        'x-base-url':getApiBase()
+      },
+      body:body
+    });
+  }else{
+    var url=getApiBase().replace(/\/+$/,'')+'/chat/completions';
+    res=await fetch(url,{
+      method:'POST',
+      headers:{'Content-Type':'application/json','Authorization':'Bearer '+key},
+      body:body
+    });
+  }
   if(!res.ok){var err=await res.text();throw new Error('API '+res.status+': '+err.slice(0,150));}
   var data=await res.json();
   if(data.error)throw new Error(data.error.message||JSON.stringify(data.error));
   return(data.choices&&data.choices[0]&&data.choices[0].message)?data.choices[0].message.content:'';
 }
+
 async function callClaudeStream(system,userMsg,onChunk){
   var key=getApiKey();
   if(!key){showKeyModal();throw new Error('请先设置API Key');}
-  var url=getApiBase().replace(/\/+$/,'')+'/chat/completions';
-  var res=await fetch(url,{
-    method:'POST',
-    headers:{'Content-Type':'application/json','Authorization':'Bearer '+key},
-    body:JSON.stringify({
-      model:getApiModel(),max_tokens:8000,stream:true,
-      messages:[{role:'system',content:system},{role:'user',content:userMsg}]
-    })
+  var proxy=getProxyUrl();
+  var body=JSON.stringify({
+    model:getApiModel(),max_tokens:8000,stream:true,
+    messages:[{role:'system',content:system},{role:'user',content:userMsg}]
   });
+  var res;
+  if(proxy){
+    res=await fetch(proxy,{
+      method:'POST',
+      headers:{
+        'Content-Type':'application/json',
+        'x-api-key':key,
+        'x-base-url':getApiBase()
+      },
+      body:body
+    });
+  }else{
+    var url=getApiBase().replace(/\/+$/,'')+'/chat/completions';
+    res=await fetch(url,{
+      method:'POST',
+      headers:{'Content-Type':'application/json','Authorization':'Bearer '+key},
+      body:body
+    });
+  }
   if(!res.ok){var err=await res.text();throw new Error('API '+res.status+': '+err.slice(0,150));}
   var reader=res.body.getReader();var dec=new TextDecoder();var going=true;
   while(going){
