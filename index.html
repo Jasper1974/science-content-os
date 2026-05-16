@@ -278,6 +278,7 @@ body {
 }
 .output-box::-webkit-scrollbar { width: 3px; }
 .output-box::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 2px; }
+.trow:hover { background: var(--surface2) !important; }
 
 .copy-btn {
   padding: 6px 14px; border-radius: 6px; background: transparent;
@@ -523,21 +524,79 @@ var selectedTopic=null,outputFull='',checkState={};
 var SK_STATE='crawl_state2',SK_PAPERS='paper_db2',SK_SCORED='scored_db2';
 var SCORE_N=10;
 var ALL_DIRS=[
-  'microplastics humans organs health effects',
-  'sleep deprivation brain damage cognitive decline',
-  'gut microbiome mental health anxiety depression',
-  'environmental toxins household hidden exposure',
-  'sex differences medicine women health overlooked',
-  'ultra processed food brain aging dementia',
-  'exercise paradox unexpected health findings',
-  'circadian rhythm disruption chronic disease',
-  'loneliness isolation biological health effects',
-  'indoor air pollution hidden sources health',
-  'intermittent fasting metabolism surprising effects',
-  'chronic stress cortisol organ damage hidden',
-  'skin microbiome immune function unexpected',
-  'blue light exposure circadian melatonin health',
-  'common drugs medications surprising side effects'
+  /* ── 死亡恐惧·最强痛点 ── */
+  'cancer prevention reversal new mechanism 2024 2025',
+  'cancer treatment breakthrough immunotherapy clinical trial 2024',
+  'heart attack hidden risk factor prevention new finding',
+  'cardiovascular disease reversal lifestyle intervention evidence',
+  'sudden cardiac death warning signs overlooked',
+  'stroke prevention unexpected risk factor new research',
+  'cancer cell death plant compound apoptosis mechanism',
+
+  /* ── 衰老与长寿·极强痛点 ── */
+  'longevity aging reversal centenarian mechanism 2024',
+  'biological age reversal intervention clinical evidence',
+  'senescent cells clearance aging disease reversal',
+  'telomere lengthening lifestyle diet surprising finding',
+  'autophagy activation longevity food compound',
+  'NAD+ restoration aging muscle brain 2024',
+  'mitochondria dysfunction aging reversal intervention',
+
+  /* ── 阿尔茨海默·认知衰退 ── */
+  'Alzheimer prevention reversal new mechanism 2024 2025',
+  'dementia risk reduction surprising lifestyle factor',
+  'memory preservation brain aging intervention evidence',
+  'cognitive decline reversal diet exercise clinical trial',
+  'brain inflammation neurodegeneration prevention finding',
+
+  /* ── 糖尿病·代谢 ── */
+  'type 2 diabetes reversal remission mechanism 2024',
+  'insulin resistance unexpected cause new finding',
+  'metabolic syndrome reversal intervention surprising',
+  'obesity root cause mechanism new research 2024',
+  'blood sugar regulation food timing surprising effect',
+
+  /* ── 癌症·日常预防 ── */
+  'common food cancer prevention surprising clinical evidence',
+  'everyday habit cancer risk reduction mechanism',
+  'cancer screening early detection new method 2024',
+  'gut microbiome cancer treatment response prediction',
+  'inflammation chronic cancer driver suppression',
+
+  /* ── 心脏健康 ── */
+  'heart disease reversal diet intervention evidence 2024',
+  'coronary artery disease regression clinical trial',
+  'blood pressure reduction surprising non-drug intervention',
+  'atrial fibrillation hidden trigger new finding',
+  'heart failure prevention lifestyle mechanism',
+
+  /* ── 生育·激素 ── */
+  'male fertility decline sperm count cause intervention',
+  'female fertility preservation new finding 2024',
+  'endocrine disruptor everyday exposure infertility mechanism',
+  'hormonal imbalance hidden environmental cause',
+  'testosterone estrogen decline reversal intervention',
+
+  /* ── 心理健康 ── */
+  'depression biological mechanism treatment breakthrough 2024',
+  'anxiety gut brain axis treatment new evidence',
+  'mental health microbiome intervention clinical trial',
+  'stress organ damage mechanism reversal intervention',
+  'PTSD treatment breakthrough new mechanism 2024',
+
+  /* ── 饮食健康·广泛共鸣 ── */
+  'ultra processed food specific organ damage mechanism',
+  'common food unexpected health benefit clinical evidence',
+  'fasting timing meal metabolic surprising effect 2024',
+  'protein source longevity mortality surprising finding',
+  'fermented food microbiome immune clinical trial 2024',
+
+  /* ── 奇趣科学·传播性强·20% ── */
+  'microplastics nanoplastics human organ accumulation harm 2024',
+  'everyday chemical household cancer endocrine hidden',
+  'common painkiller hidden organ damage surprising finding',
+  'sleep deprivation irreversible brain damage mechanism',
+  'plant extract cancer cell death surprising compound 2024'
 ];
 var QTAGS=['营养与日常食物','睡眠与大脑','环境污染与身体','男女健康差异','运动与代谢','肠道菌群与免疫','衰老与细胞','心理与生理','日常习惯隐藏影响','常见植物未知作用','微塑料与污染物','皮肤与身体信号'];
 var CL=[
@@ -979,19 +1038,60 @@ async function fetchPubMedReal(kw,dStart,dEnd){
 }
 
 async function fetchPapersViaClaude(dirs,wl){
-  var sys='You are a biomedical literature expert. Output ONLY lines that start with PAPER|. Absolutely no other text, no introduction, no commentary.';
-  var prompt='List 15 real peer-reviewed papers about: '+dirs.join(', ')+'\n'
-    +'Focus: '+wl+'\n'
-    +'Papers must have surprising, counterintuitive, or impactful findings.\n\n'
-    +'Output format - one line per paper, pipe-separated, NO other text:\n'
-    +'PAPER|Full title of paper|Journal|Year|PMID or 0|One sentence summary of key finding\n\n'
-    +'Example output:\n'
-    +'PAPER|Microplastics Found in Human Testicular Tissue|Toxicological Sciences|2024|38346234|Microplastics detected in all 23 human testes samples tested\n'
-    +'PAPER|Sleep Deprivation Accelerates Alzheimer Protein Buildup|Science|2023|37437520|One night of sleep loss increases amyloid-beta by 17 percent\n\n'
-    +'Now list 15 real papers following this exact format:';
+  // PRIORITY 1: PubMed Vercel Proxy (newest real papers)
+  var allPapers=[];
+  var dirs5=dirs.slice(0,5);
 
+  async function tryPubMedProxy(){
+    for(var di=0;di<dirs5.length;di++){
+      try{
+        var pp=await fetchPubMedProxy(dirs5[di],0,60);
+        if(pp.length>0){allPapers=allPapers.concat(pp);dbg('PubMed-Proxy['+di+']: '+pp.length);}
+        await new Promise(function(r){setTimeout(r,150);});
+      }catch(ex){dbg('Proxy['+di+']: '+ex.message.slice(0,40));}
+    }
+  }
+
+  async function trySemanticScholar(){
+    for(var di=0;di<Math.min(3,dirs5.length);di++){
+      try{
+        var ss=await fetchSemanticScholar(dirs5[di]);
+        if(ss.length>0){allPapers=allPapers.concat(ss);dbg('SS['+di+']: '+ss.length);}
+      }catch(ex){dbg('SS['+di+']: '+ex.message.slice(0,40));}
+    }
+  }
+
+  async function tryEuropePMC(){
+    try{
+      var ep=await fetchEuropePMC(dirs5[0]);
+      if(ep.length>0){allPapers=allPapers.concat(ep);dbg('EuropePMC: '+ep.length);}
+    }catch(ex){dbg('EPMC: '+ex.message.slice(0,40));}
+  }
+
+  await tryPubMedProxy();
+  if(allPapers.length<15) await trySemanticScholar();
+  if(allPapers.length<15) await tryEuropePMC();
+
+  if(allPapers.length>0){
+    var seen={};var unique=[];
+    allPapers.forEach(function(p){
+      var k=(p.title||'').slice(0,30).toLowerCase().replace(/[^a-z0-9]/g,'');
+      if(k&&!seen[k]){seen[k]=true;unique.push(p);}
+    });
+    dbg('Real DB unique: '+unique.length);
+    return unique;
+  }
+
+  // LAST RESORT: Claude recall
+  dbg('Real sources failed, using Claude recall');
+  var sys='You are a biomedical literature expert. Output ONLY lines that start with PAPER|. No other text.';
+  var prompt='List 15 real peer-reviewed papers about: '+dirs.join(', ')+'\n'
+    +'Focus: '+wl+'. Papers must have surprising or counterintuitive findings.\n'
+    +'Output one line per paper: PAPER|Full title|Journal|Year|PMID or 0|Key finding\n'
+    +'Example: PAPER|Microplastics in Human Testes|Toxicol Sci|2024|38346234|Found in all 23 samples\n'
+    +'List 15 real papers now:';
   var text=await callClaude(sys,prompt,2500);
-  dbg('fetchPapers raw (200): '+text.slice(0,200));
+  dbg('Claude recall (200): '+text.slice(0,200));
   return parsePaperLines(text);
 }
 
@@ -1034,8 +1134,16 @@ async function runDailyCrawl(onStatus){
   var stats=await getStats();
   if(s.lastRun===today&&stats.total>0){onStatus('done_today',s);return s;}
   onStatus('start',s);
+  // Pick 5 random directions for maximum diversity
   var dirs=[];
-  for(var i=0;i<3;i++)dirs.push(ALL_DIRS[(s.dirIdx+i)%ALL_DIRS.length]);
+  var used={};
+  var seed=Math.floor(Date.now()/86400000); // changes daily
+  for(var i=0;i<5;i++){
+    var idx=Math.floor((seed*7+i*13+s.dirIdx*3)%ALL_DIRS.length);
+    if(used[idx]){idx=(idx+7)%ALL_DIRS.length;}
+    used[idx]=true;
+    dirs.push(ALL_DIRS[idx]);
+  }
   onStatus('fetch',dirs.join(' + '));
   var all=[];
   try{
@@ -1060,21 +1168,26 @@ async function scoreNextBatch(papers){
     return '['+String(i+1)+'] TITLE: '+p.title+' | JOURNAL: '+p.journal+' '+p.year+' | FINDING: '+p.abstract;
   }).join(sep);
 
-  var sys='You are a health science communication expert. Output ONLY lines starting with TOPIC|. Zero other text.';
+  var sys='You are a science communication expert. Output ONLY lines starting with TOPIC|. Zero other text.';
   var prompt='Evaluate these papers for YouTube/TikTok health science impact.\n\n'
     +'SCORING (total 100 points):\n'
-    +'Extremity(20): How shocking is conclusion? Would layperson say "really?!"\n'
-    +'Urgency(20): Is harm happening now unnoticed? Irreversible damage?\n'
-    +'ChallengesBelief(15): Overturns something most people practice daily?\n'
+    +'Extremity(20): How shocking? Layperson says "really?!"\n'
+    +'Urgency(20): Harm happening now unnoticed? Irreversible?\n'
+    +'ChallengesBelief(15): Overturns something most people do daily?\n'
     +'HiddenProcess(15): Reveals what body does without your knowledge?\n'
     +'VividNumbers(10): Data translatable to shocking everyday comparisons?\n'
-    +'AudienceBreadth(10): How universal? More people affected = higher score\n'
-    +'Freshness(10): Rarely covered angle in science media?\n\n'
+    +'AudienceBreadth(10): How universal? More people = higher\n'
+    +'Freshness(10): Not already covered by major science channels?\n\n'
     +'EXCLUDE: specific drug treatments, cure claims, alternative medicine.\n'
-    +'safe = usable with "research found" framing\n'
-    +'warn = needs careful wording (preliminary/animal study etc)\n\n'
-    +'For EACH paper scoring above 55 total, output EXACTLY one line:\n'
-    +'TOPIC|Chinese title max 15 chars|English title|trigger codes e.g. 1+3+5|Journal Year|TotalScore|Extremity|Urgency|ChallengesBelief|HiddenProcess|VividNumbers|AudienceBreadth|Freshness|pending|CategoryKeyword|safe or warn|PaperNumber\n\n'
+    +'safe = usable with research found framing\n'
+    +'warn = preliminary or animal study only\n\n'
+    +'CRITICAL for Chinese title: Create a punchy ONE-LINE headline that:\n'
+    +'- Includes specific numbers/percentages/comparisons if available\n'
+    +'- Makes readers immediately curious (not a topic label but a finding statement)\n'
+    +'- Examples of GOOD titles: "每周饮酒超3杯脑容量缩小6%" "失眠72小时后大脑自噬机制停摆" "肠道菌群决定你85%的情绪状态"\n'
+    +'- Examples of BAD titles: "微塑料研究" "睡眠与健康" "肠道菌群的作用"\n\n'
+    +'For EACH paper scoring above 60 total, output EXACTLY one line:\n'
+    +'TOPIC|Punchy Chinese headline with data max 20 chars|English title|triggers|Journal Year|TotalScore|Extremity|Urgency|ChallengesBelief|HiddenProcess|VividNumbers|AudienceBreadth|Freshness|pending|CategoryKeyword|safe or warn|PaperNumber\n\n'
     +'PAPERS:\n'+paperList;
 
   try{
@@ -1263,41 +1376,55 @@ function showErr(msg){
 function renderTopics(topics,stats){
   topics.sort(function(a,b){return b.total-a.total;});
   window._topics=topics;
-  var si=stats
-    ?(' <span style="color:var(--text3);font-size:11px">库存'+stats.total+'篇|已评'+stats.scored+'|待评'+stats.unscored+'</span>')
-    :'';
-  document.getElementById('resultsCount').innerHTML='共'+topics.length+'个高分选题'+si;
+  var si=stats?(' <span style="color:var(--text3);font-size:11px">库'+stats.total+'篇|待评'+stats.unscored+'</span>'):'';
+  document.getElementById('resultsCount').innerHTML='共'+topics.length+'条'+si;
   document.getElementById('topicList').innerHTML=topics.map(function(t,i){
-    var sc=t.total>=75?'sh':t.total>=55?'sm':'sl';
-    var sb=t.safety_level==='warn'
-      ?'<span class="badge b-warn">&#9888; 需谨慎措辞</span>'
-      :'<span class="badge b-safe">&#10003; 安全</span>';
-    var s=t.scores;
+    var scoreColor=t.total>=75?'var(--green)':t.total>=60?'var(--amber)':'var(--text2)';
     var pm=(t.srcPaper&&t.srcPaper.pmid&&t.srcPaper.pmid.match(/^[0-9]+$/))
-      ?'<a href="https://pubmed.ncbi.nlm.nih.gov/'+t.srcPaper.pmid+'/" target="_blank" style="font-size:11px;color:var(--accent);text-decoration:none" onclick="event.stopPropagation()">&#8599;PubMed</a>':'';
-    var st=(t.srcPaper&&t.srcPaper.title)
-      ?'<div style="font-size:11px;color:var(--text3);margin-bottom:8px;font-style:italic;line-height:1.5">"'
-        +(t.srcPaper.title.length>110?t.srcPaper.title.slice(0,110)+'...':t.srcPaper.title)+'"</div>':'';
-    return '<div class="topic-card" id="tc-'+i+'" onclick="selectTopic('+i+')">'
-      +'<div class="tc-top"><div class="tc-title">'+t.title+'</div><div class="tc-score '+sc+'">'+t.total+'</div></div>'
-      +'<div class="tc-hook">'+t.hook+'</div>'
-      +'<div class="tc-meta"><span class="badge">'+t.category+'</span>'+sb+'<span class="badge">'+t.paper+'</span>'+pm+'</div>'
-      +st+(t.english_title?'<div class="tc-en">"'+t.english_title+'"</div>':'')
-      +'<div class="tc-scores">'
-      +'<div class="sc-box"><span class="sc-val" style="color:var(--red)">'+s.s1+'</span><span class="sc-lbl">极端/20</span></div>'
-      +'<div class="sc-box"><span class="sc-val" style="color:var(--amber)">'+s.s2+'</span><span class="sc-lbl">紧迫/20</span></div>'
-      +'<div class="sc-box"><span class="sc-val" style="color:var(--accent)">'+s.s3+'</span><span class="sc-lbl">信念/15</span></div>'
-      +'<div class="sc-box"><span class="sc-val" style="color:var(--teal)">'+s.s4+'</span><span class="sc-lbl">隐藏/15</span></div>'
-      +'<div class="sc-box"><span class="sc-val" style="color:var(--green)">'+s.s5+'</span><span class="sc-lbl">数字/10</span></div>'
-      +'<div class="sc-box"><span class="sc-val" style="color:var(--text2)">'+s.s6+'</span><span class="sc-lbl">受众/10</span></div>'
-      +'<div class="sc-box"><span class="sc-val" style="color:var(--text2)">'+s.s7+'</span><span class="sc-lbl">新鲜/10</span></div>'
-      +'<div class="sc-box" style="opacity:0.3"><span class="sc-val" style="color:var(--text3);font-size:8px">TBD</span><span class="sc-lbl">竞争度</span></div>'
+      ?'<a href="https://pubmed.ncbi.nlm.nih.gov/'+t.srcPaper.pmid+'/" target="_blank" style="color:var(--accent);font-size:11px;text-decoration:none;margin-right:6px;flex-shrink:0" onclick="event.stopPropagation()">&#8599;</a>':'';
+    var s=t.scores||{};
+    var scoreGrid='<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:4px;margin-bottom:10px">'
+      +'<div style="text-align:center;background:var(--surface2);border-radius:5px;padding:4px"><b style="color:var(--red)">'+(s.s1||0)+'</b><div style="font-size:9px;color:var(--text3)">极端/20</div></div>'
+      +'<div style="text-align:center;background:var(--surface2);border-radius:5px;padding:4px"><b style="color:var(--amber)">'+(s.s2||0)+'</b><div style="font-size:9px;color:var(--text3)">紧迫/20</div></div>'
+      +'<div style="text-align:center;background:var(--surface2);border-radius:5px;padding:4px"><b style="color:var(--accent)">'+(s.s3||0)+'</b><div style="font-size:9px;color:var(--text3)">信念/15</div></div>'
+      +'<div style="text-align:center;background:var(--surface2);border-radius:5px;padding:4px"><b style="color:var(--teal)">'+(s.s4||0)+'</b><div style="font-size:9px;color:var(--text3)">隐藏/15</div></div>'
+      +'<div style="text-align:center;background:var(--surface2);border-radius:5px;padding:4px"><b style="color:var(--green)">'+(s.s5||0)+'</b><div style="font-size:9px;color:var(--text3)">数字/10</div></div>'
+      +'<div style="text-align:center;background:var(--surface2);border-radius:5px;padding:4px"><b style="color:var(--text2)">'+(s.s6||0)+'</b><div style="font-size:9px;color:var(--text3)">受众/10</div></div>'
+      +'<div style="text-align:center;background:var(--surface2);border-radius:5px;padding:4px"><b style="color:var(--text2)">'+(s.s7||0)+'</b><div style="font-size:9px;color:var(--text3)">新鲜/10</div></div>'
+      +'<div style="text-align:center;background:var(--surface2);border-radius:5px;padding:4px;opacity:0.3"><b style="font-size:9px;color:var(--text3)">TBD</b><div style="font-size:9px;color:var(--text3)">竞争</div></div>'
+      +'</div>';
+    var detail='<div id="td-'+i+'" style="display:none;padding:12px 14px 4px;border-top:1px solid var(--border)">'
+      +(t.english_title?'<div style="font-size:12px;color:var(--text2);margin-bottom:6px;font-style:italic">"'+t.english_title+'"</div>':'')
+      +(t.srcPaper&&t.srcPaper.title?'<div style="font-size:11px;color:var(--text3);margin-bottom:8px;line-height:1.5">原文: '+(t.srcPaper.title.length>120?t.srcPaper.title.slice(0,120)+'...':t.srcPaper.title)+'</div>':'')
+      +(t.srcPaper&&t.srcPaper.abstract?'<div style="font-size:11px;color:var(--text3);margin-bottom:8px;line-height:1.6">'+t.srcPaper.abstract.slice(0,200)+'...</div>':'')
+      +scoreGrid
+      +(t.safety_level==='warn'?'<div style="font-size:11px;color:var(--amber);margin-bottom:8px">&#9888; 需谨慎措辞，生成时自动套用谨慎模板</div>':'')
+      +'<button onclick="event.stopPropagation();selectTopic('+i+')" style="width:100%;padding:9px;background:var(--accent);color:#fff;border:none;border-radius:8px;font-size:13px;font-weight:700;cursor:pointer;margin-bottom:10px">选择此题材 &rarr;</button>'
+      +'</div>';
+    return '<div>'
+      +'<div class="trow" style="display:flex;align-items:center;padding:9px 14px;border-bottom:1px solid var(--border);cursor:pointer;gap:8px" '
+      +'onclick="toggleDetail('+i+',event)">'
+      +'<span style="font-size:13px;font-weight:800;color:'+scoreColor+';min-width:30px;text-align:right;flex-shrink:0">'+t.total+'</span>'
+      +pm
+      +(t.safety_level==='warn'?'<span style="color:var(--amber);font-size:11px;flex-shrink:0">&#9888;</span>':'')
+      +'<span style="font-size:14px;font-weight:600;flex:1;line-height:1.4">'+t.title+'</span>'
+      +'<span style="font-size:10px;color:var(--text3);flex-shrink:0;font-family:DM Mono,monospace;margin-left:6px">'+t.paper.slice(0,20)+'</span>'
+      +'<span id="ta-'+i+'" style="color:var(--text3);font-size:11px;flex-shrink:0;margin-left:4px">&#9660;</span>'
       +'</div>'
-      +(t.safety_level==='warn'?'<div class="tc-warn-note">&#9888; 生成时自动套用谨慎措辞模板</div>':'')
-      +'<button class="tc-btn" onclick="event.stopPropagation();selectTopic('+i+')">选择此题材 &rarr;</button>'
+      +detail
       +'</div>';
   }).join('');
   document.getElementById('discoverResults').style.display='block';
+}
+
+function toggleDetail(i,ev){
+  if(ev)ev.stopPropagation();
+  var d=document.getElementById('td-'+i);
+  var a=document.getElementById('ta-'+i);
+  if(!d)return;
+  var isOpen=d.style.display!=='none';
+  d.style.display=isOpen?'none':'block';
+  if(a)a.innerHTML=isOpen?'&#9660;':'&#9650;';
 }
 
 function selectTopic(i){
@@ -1338,7 +1465,15 @@ async function generate(){
   var t=selectedTopic;
   var srcAb=(t.srcPaper&&t.srcPaper.abstract)?'Source finding: '+t.srcPaper.abstract:'';
   var warnI=t.safety_level==='warn'?'IMPORTANT: This is preliminary/animal research. Never imply definitive human causation. Emphasize research stage clearly.':'';
-  var msg='Professional health science content creator for YouTube and TikTok.\n\n'
+  var docStyle='You are an award-winning science documentary narrator. '
+    +'Your writing is cinematic and rhythmically varied. '
+    +'Use vivid metaphors, specific numbers, and human consequences. '
+    +'Short punchy sentences for impact. Longer flowing sentences for context. '
+    +'Every statistic must connect to a personal relatable consequence. '
+    +'Distinguish correlation from causation. Never overstate findings. '
+    +'Chinese content in Chinese with literary flair. English in English with documentary gravitas. '
+    +'Strict anti-demotion: use research found/suggests only.';
+  var msg='You are a science documentary narrator writing for YouTube and TikTok.\n\n'
     +'Topic: '+t.title+'\nEnglish title: '+(t.english_title||'')+'\nPaper: '+(t.paper||'peer-reviewed research')+'\n'
     +srcAb+'\n'+warnI+'\n\n'
     +'Anti-demotion rules:\n'
@@ -1368,7 +1503,7 @@ async function generate(){
   document.getElementById('outputArea').style.display='block';
   try{
     await callClaudeStream(
-      'Professional health science content creator. Chinese content in Chinese, English content in English. Strict anti-demotion wording.',
+      docStyle,
       msg,
       function(chunk){outputFull+=chunk;outEl.textContent=outputFull;outEl.scrollTop=outEl.scrollHeight;}
     );
