@@ -362,6 +362,9 @@ body {
   <button class="nav-item" onclick="nav('publish')" id="nav-publish">
     <span class="nav-icon">🚀</span> 发布
   </button>
+  <button class="nav-item" onclick="nav('favorites')" id="nav-favorites">
+    <span class="nav-icon">⭐</span> 收藏夹
+  </button>
   <div class="sidebar-footer">
     防降权内嵌 ✓<br><br>
     <span id="keyStatus" style="color:var(--red)">⚠ 未设置API Key</span><br>
@@ -421,7 +424,19 @@ body {
     </div>
   </div>
 
-  <!-- PRODUCE -->
+  <!-- FAVORITES -->
+  <div class="panel" id="panel-favorites">
+    <div class="produce-wrap">
+      <div class="panel-title">⭐ 收藏夹</div>
+      <div class="panel-sub">手动存入的选题，跨日期保留，随时取用</div>
+      <div id="favEmpty" style="margin-top:40px;text-align:center;color:var(--text3)">
+        <div style="font-size:36px;margin-bottom:12px">⭐</div>
+        <div style="font-size:14px">还没有收藏任何选题</div>
+        <div style="font-size:12px;margin-top:6px">在选题列表展开任意一条，点击「存入收藏」</div>
+      </div>
+      <div id="favList"></div>
+    </div>
+  </div>
   <div class="panel" id="panel-produce">
     <div class="empty-state" id="no-topic">
       <div class="empty-icon">👆</div>
@@ -649,6 +664,7 @@ function nav(p){
   var mi=document.getElementById('mob-'+p);if(mi)mi.classList.add('active');
   if(p==='produce')updateProduce();
   if(p==='publish')buildChecklist();
+  if(p==='favorites')renderFavorites();
   window.scrollTo(0,0);
 }
 var _searchStopped=false;
@@ -1348,10 +1364,13 @@ async function scoreNextBatch(papers){
     +'   Somewhat fresh: 2-3\n'
     +'   Microplastics/sleep deprivation/gut microbiome general: 0-1\n\n'
     +'DIVERSITY RULE: If 3+ papers share same CategoryKeyword, cap TopicRarity at 1 for all but the top scorer.\n\n'
-    +'SAFETY LABELING (never exclude, always output, label appropriately):\n'
-    +'safe = peer-reviewed human study, usable with research found/suggests framing\n'
-    +'warn = any of: animal/cell study only, very small n (<50), preliminary mechanism only, specific drug brand mentioned, alternative medicine claim, unverified cure claim\n'
-    +'When warn: still output the paper — the editor will decide. Measures will be applied at script generation stage.\n\n'
+    +'SAFETY RULES:\n'
+    +'EXCLUDE (do NOT output at all):\n'
+    +'  - Animal-only or cell-culture-only studies (no human data whatsoever)\n'
+    +'  - Human studies with n < 50 participants\n'
+    +'  - Alternative medicine claims: homeopathy, energy healing, unvalidated herbal cure claims, detox/alkaline water treatment claims\n'
+    +'OUTPUT with safe label: peer-reviewed human study (n≥50), usable with "research found/suggests" framing\n'
+    +'OUTPUT with warn label: specific pharmaceutical brand drug mentioned, but study has real human RCT/cohort results with definitive outcomes. Flag for editor review.\n\n'
     +'CHINESE TITLE: punchy ONE-LINE finding statement with specific data.\n'
     +'GOOD: "II型糖尿病患者86%通过饮食逆转停药" "每天30分钟步行降低41%阿尔茨海默风险"\n'
     +'BAD: "微塑料危害研究" "睡眠与健康关系" "癌症新发现"\n\n'
@@ -1464,7 +1483,10 @@ function renderTopics(topics,stats){
       +(t.srcPaper&&t.srcPaper.abstract?'<div style="font-size:10px;color:var(--text3);margin-bottom:8px;line-height:1.5">'+t.srcPaper.abstract.slice(0,180)+'...</div>':'')
       +scoreGrid
       +(t.safety_level==='warn'?'<div style="font-size:11px;color:var(--amber);background:#f59e0b0a;border:1px solid #f59e0b28;border-radius:6px;padding:6px 10px;margin-bottom:8px">⚠ <b>需人工审核</b>：可能为动物实验、小样本、替代医学或特定品牌药物。选用前请核实原文，生成时自动套用谨慎措辞模板。</div>':'')
-      +'<button onclick="event.stopPropagation();selectTopic('+i+')" style="width:100%;padding:7px;background:var(--accent);color:#fff;border:none;border-radius:6px;font-size:12px;font-weight:700;cursor:pointer;margin-bottom:8px">选择此题材 →</button>'
+      +'<div style="display:flex;gap:8px;margin-bottom:8px">'
+      +'<button onclick="event.stopPropagation();saveFavorite('+i+')" style="flex:1;padding:7px;background:var(--surface2);color:var(--amber);border:1px solid var(--amber)44;border-radius:6px;font-size:12px;font-weight:600;cursor:pointer">⭐ 存入收藏</button>'
+      +'<button onclick="event.stopPropagation();selectTopic('+i+')" style="flex:2;padding:7px;background:var(--accent);color:#fff;border:none;border-radius:6px;font-size:12px;font-weight:700;cursor:pointer">选择此题材 →</button>'
+      +'</div>'
       +'</div>';
     return '<div style="border-bottom:1px solid var(--border)">'
       +'<div class="trow" style="display:flex;align-items:center;padding:7px 10px;cursor:pointer;gap:6px" onclick="toggleDetail('+i+',event)">'
@@ -1513,6 +1535,82 @@ function selectTopic(i){
   selectedTopic=window._topics[i];
   document.querySelectorAll('.topic-card').forEach(function(el,j){el.classList.toggle('selected',j===i);});
   setTimeout(function(){nav('produce');},280);
+}
+
+/* ═══════════════════════════════════════════
+   FAVORITES
+═══════════════════════════════════════════ */
+var SK_FAV='scicos_favorites';
+
+async function getFavorites(){
+  var raw=await stGet(SK_FAV);
+  return raw?JSON.parse(raw):[];
+}
+
+async function saveFavorite(i){
+  var t=window._topics[i];
+  if(!t)return;
+  var favs=await getFavorites();
+  // deduplicate by title
+  if(favs.find(function(f){return f.title===t.title;})){
+    showToast('已在收藏夹中');return;
+  }
+  t._savedDate=new Date().toISOString().slice(0,10);
+  favs.unshift(t);
+  await stSet(SK_FAV,JSON.stringify(favs));
+  showToast('⭐ 已存入收藏夹');
+}
+
+async function removeFavorite(title){
+  var favs=await getFavorites();
+  favs=favs.filter(function(f){return f.title!==title;});
+  await stSet(SK_FAV,JSON.stringify(favs));
+  renderFavorites();
+}
+
+async function renderFavorites(){
+  var favs=await getFavorites();
+  var empty=document.getElementById('favEmpty');
+  var list=document.getElementById('favList');
+  if(!list)return;
+  if(favs.length===0){empty.style.display='block';list.innerHTML='';return;}
+  empty.style.display='none';
+  list.innerHTML=favs.map(function(t,i){
+    var scoreColor=t.total>=80?'var(--green)':t.total>=65?'var(--amber)':'var(--text2)';
+    var warnTag=t.safety_level==='warn'?'<span style="background:#f59e0b22;border:1px solid #f59e0b55;color:var(--amber);font-size:9px;font-family:DM Mono,monospace;padding:1px 5px;border-radius:4px;margin-right:4px">⚠ 需审核</span>':'';
+    return '<div style="border-bottom:1px solid var(--border);padding:10px 0">'
+      +'<div style="display:flex;align-items:center;gap:8px;margin-bottom:6px">'
+      +'<span style="font-size:10px;color:var(--text3);font-family:DM Mono,monospace">'+t._savedDate+'</span>'
+      +warnTag
+      +'<span style="font-size:13px;font-weight:600;flex:1">'+t.title+'</span>'
+      +'<span style="font-size:12px;font-weight:800;color:'+scoreColor+';font-family:DM Mono,monospace">'+t.total+'</span>'
+      +'</div>'
+      +'<div style="display:flex;gap:8px">'
+      +'<button onclick="selectFavorite('+i+')" style="flex:2;padding:6px;background:var(--accent);color:#fff;border:none;border-radius:6px;font-size:12px;font-weight:700;cursor:pointer">去生产 →</button>'
+      +'<button onclick="removeFavorite(\''+t.title.replace(/'/g,"\\'")+'\')" style="flex:1;padding:6px;background:var(--surface2);color:var(--red);border:1px solid var(--red)33;border-radius:6px;font-size:12px;cursor:pointer">删除</button>'
+      +'</div>'
+      +'</div>';
+  }).join('');
+  window._favTopics=favs;
+}
+
+function selectFavorite(i){
+  if(!window._favTopics||!window._favTopics[i])return;
+  selectedTopic=window._favTopics[i];
+  nav('produce');
+}
+
+function showToast(msg){
+  var t=document.getElementById('toast');
+  if(!t){
+    t=document.createElement('div');
+    t.id='toast';
+    t.style.cssText='position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:#23233a;color:#e2e2f0;padding:9px 18px;border-radius:8px;font-size:13px;z-index:9999;border:1px solid var(--border2);pointer-events:none;transition:opacity 0.3s';
+    document.body.appendChild(t);
+  }
+  t.textContent=msg;t.style.opacity='1';
+  clearTimeout(t._tid);
+  t._tid=setTimeout(function(){t.style.opacity='0';},2000);
 }
 
 /* ═══════════════════════════════════════════
