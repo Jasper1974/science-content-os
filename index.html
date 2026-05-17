@@ -447,6 +447,59 @@ body {
 .sb3-export { padding:5px 12px; border-radius:6px; background:transparent; border:1px solid var(--border2); color:var(--text2); font-size:11px; font-family:'DM Mono',monospace; cursor:pointer; transition:all 0.15s; }
 .sb3-export:hover { border-color:var(--teal); color:var(--teal); }
 .sb3-stats { font-size:11px; color:var(--text2); font-family:'DM Mono',monospace; padding:4px 10px; background:var(--surface2); border-radius:6px; border:1px solid var(--border); }
+
+/* ── 专题模式 ── */
+.topic-checkbox {
+  width:16px; height:16px; border-radius:4px; border:1.5px solid var(--border2);
+  background:transparent; cursor:pointer; flex-shrink:0;
+  display:flex; align-items:center; justify-content:center;
+  transition:all 0.15s; margin-right:2px;
+}
+.topic-checkbox.checked { background:var(--accent); border-color:var(--accent); }
+.topic-checkbox.checked::after { content:'✓'; font-size:10px; color:#fff; font-weight:700; }
+
+#specialBar {
+  position:fixed; bottom:0; left:var(--sidebar-w); right:0;
+  background:var(--surface); border-top:1px solid var(--accent);
+  padding:12px 32px; display:none;
+  align-items:center; gap:14px; z-index:200;
+  box-shadow:0 -4px 24px #7c6cfc18;
+}
+#specialBar .sb-count {
+  font-size:13px; font-weight:700; color:var(--accent);
+  font-family:'DM Mono',monospace;
+}
+#specialBar .sb-titles {
+  font-size:11px; color:var(--text2); flex:1;
+  overflow:hidden; text-overflow:ellipsis; white-space:nowrap;
+}
+.special-mode-badge {
+  background:var(--accent-glow); border:1px solid #7c6cfc55;
+  color:var(--accent); font-size:11px; padding:3px 10px;
+  border-radius:6px; font-family:'DM Mono',monospace; font-weight:600;
+}
+.special-paper-list {
+  background:var(--surface2); border:1px solid var(--border);
+  border-radius:10px; padding:12px 16px; margin-bottom:14px;
+}
+.special-paper-item {
+  display:flex; align-items:flex-start; gap:8px;
+  padding:6px 0; border-bottom:1px solid var(--border);
+  font-size:12px; color:var(--text2);
+}
+.special-paper-item:last-child { border-bottom:none; }
+.special-paper-num {
+  font-family:'DM Mono',monospace; font-size:10px;
+  color:var(--accent); flex-shrink:0; min-width:20px; margin-top:1px;
+}
+.special-batch-info {
+  background:#4fd1c510; border:1px solid #4fd1c530;
+  border-radius:8px; padding:10px 14px; font-size:12px;
+  color:var(--teal); margin-bottom:14px; line-height:1.7;
+}
+@media(max-width:700px){
+  #specialBar { left:0; padding:10px 16px; }
+}
 </style>
 </head>
 <body>
@@ -520,9 +573,21 @@ body {
             <div class="results-title">候选选题</div>
             <div class="results-count" id="resultsCount"></div>
           </div>
-          <div style="display:flex;gap:8px"><button class="btn-secondary" onclick="forceRefetch()" style="padding:8px 14px;font-size:12px;border-color:var(--amber);color:var(--amber)">重新抓取</button><button class="btn-secondary" onclick="doSearch()" style="padding:8px 14px;font-size:12px">刷新评分</button></div>
+          <div style="display:flex;gap:8px">
+            <button class="btn-secondary" onclick="toggleSelectMode()" id="selectModeBtn" style="padding:8px 14px;font-size:12px;border-color:var(--accent);color:var(--accent)">☑ 专题多选</button>
+            <button class="btn-secondary" onclick="forceRefetch()" style="padding:8px 14px;font-size:12px;border-color:var(--amber);color:var(--amber)">重新抓取</button>
+            <button class="btn-secondary" onclick="doSearch()" style="padding:8px 14px;font-size:12px">刷新评分</button>
+          </div>
         </div>
         <div id="topicList"></div>
+      </div>
+
+      <!-- 专题多选浮动操作栏 -->
+      <div id="specialBar">
+        <div class="sb-count" id="specialCount">已选 0 篇</div>
+        <div class="sb-titles" id="specialTitles">—</div>
+        <button class="btn-secondary" onclick="clearSpecialSelection()" style="padding:7px 12px;font-size:12px;flex-shrink:0">清空</button>
+        <button class="btn-primary" onclick="startSpecialTopic()" style="padding:9px 18px;font-size:13px;flex-shrink:0">✦ 生成专题脚本</button>
       </div>
     </div>
   </div>
@@ -557,6 +622,13 @@ body {
         <button class="btn-secondary" onclick="nav('discover')" style="padding:8px 14px;font-size:12px">换题材</button>
       </div>
       <div id="safetyBox"></div>
+
+      <!-- 专题模式信息栏 -->
+      <div id="specialModeBox" style="display:none;margin-bottom:14px">
+        <div class="special-mode-badge" style="display:inline-block;margin-bottom:10px">✦ 专题模式</div>
+        <div class="special-batch-info" id="specialBatchInfo"></div>
+        <div class="special-paper-list" id="specialPaperList"></div>
+      </div>
 
       <!-- REFERENCE FILES UPLOAD -->
       <div class="ref-section">
@@ -1756,6 +1828,7 @@ function renderTopics(topics,stats){
       +'</div>';
     return '<div style="border-bottom:1px solid var(--border)">'
       +'<div class="trow" style="display:flex;align-items:center;padding:7px 10px;cursor:pointer;gap:6px" onclick="toggleDetail('+i+',event)">'
+      +'<div id="chk-'+i+'" class="topic-checkbox'+(window._specialSelected&&window._specialSelected[i]?' checked':'')+'" onclick="event.stopPropagation();toggleSpecialSelect('+i+')" title="加入专题"></div>'
       +'<span style="font-size:10px;color:var(--text3);min-width:18px;text-align:right;flex-shrink:0;font-family:DM Mono,monospace">'+(i+1)+'</span>'
       +pm+warnIcon
       +'<span style="font-size:13px;font-weight:600;flex:1;line-height:1.3">'+t.title+'</span>'
@@ -1954,9 +2027,39 @@ function updateProduce(){
   }
   document.getElementById('no-topic').style.display='none';
   document.getElementById('produce-main').style.display='block';
-  document.getElementById('selTitle').textContent=selectedTopic.title;
-  var sb=document.getElementById('safetyBox');
-  if(selectedTopic.safety_level==='warn')
+
+  var isSpecial = window._isSpecialTopic && window._specialTopics && window._specialTopics.length > 1;
+
+  if(isSpecial){
+    var topics = window._specialTopics;
+    document.getElementById('selTitle').textContent = '【专题】'+topics.map(function(t){return t.title;}).join(' · ').slice(0,60)+'…';
+    // 显示专题信息栏
+    document.getElementById('specialModeBox').style.display = 'block';
+    var info = document.getElementById('specialBatchInfo');
+    info.innerHTML = '✦ 专题模式：综合 <b>'+topics.length+'篇</b> 同主题论文 + AI领域系统知识，生成 12–20 分钟深度纪录片脚本。<br>'
+      +'摘要超出单次token限制时自动分批读取，不遗漏任何内容。';
+    var listHtml = topics.map(function(t,i){
+      var journal = (t.srcPaper && t.srcPaper.journal) ? t.srcPaper.journal : (t.paper||'');
+      var year = (t.srcPaper && t.srcPaper.year) ? t.srcPaper.year : '';
+      return '<div class="special-paper-item">'
+        +'<span class="special-paper-num">'+(i+1)+'.</span>'
+        +'<span>'+t.title+'<span style="color:var(--text3);font-size:10px;margin-left:6px">'+journal+' '+year+'</span></span>'
+        +'</div>';
+    }).join('');
+    document.getElementById('specialPaperList').innerHTML = listHtml;
+    // 改按钮文字
+    document.getElementById('genBtn1').textContent = '✦ 生成专题 YouTube 脚本（12–20min）';
+    document.getElementById('genBtn2').textContent = '✦ 生成专题 TikTok + 配图';
+  } else {
+    window._isSpecialTopic = false;
+    document.getElementById('selTitle').textContent = selectedTopic.title;
+    document.getElementById('specialModeBox').style.display = 'none';
+    document.getElementById('genBtn1').textContent = '✦ 生成 YouTube 脚本';
+    document.getElementById('genBtn2').textContent = '✦ 生成 TikTok + 配图';
+  }
+
+  var sb = document.getElementById('safetyBox');
+  if(!isSpecial && selectedTopic.safety_level==='warn')
     sb.innerHTML='<div class="warn-box"><b>&#9888; 措辞提示已内嵌进生成指令</b></div>';
   else sb.innerHTML='';
   resetGen();
@@ -1974,6 +2077,18 @@ function resetGen(){
   document.getElementById('genBtn3').innerHTML='✦ 生成分镜表';
   sb3Rows=[];
   outputFull='';
+}
+
+function newContent(){
+  selectedTopic=null;outputFull='';checkState={};window._topics=[];
+  window._isSpecialTopic=false;window._specialTopics=[];
+  window._specialSelected={};
+  document.getElementById('discoverHero').classList.remove('compact');
+  document.getElementById('discoverResults').style.display='none';
+  document.getElementById('discoverLoading').style.display='none';
+  document.getElementById('searchInput').value='';
+  document.getElementById('specialBar').style.display='none';
+  nav('discover');
 }
 /* ═══════════════════════════════════════════
    REFERENCE FILES
@@ -2180,6 +2295,9 @@ function startTimer(subLineId,msgs,interval){
 }
 
 async function generateBatch1(){
+  if(window._isSpecialTopic && window._specialTopics && window._specialTopics.length > 1){
+    return generateSpecialBatch1();
+  }
   if(!selectedTopic)return;
   var key=getApiKey();
   if(!key){showKeyModal();return;}
@@ -2225,6 +2343,9 @@ async function generateBatch1(){
 }
 
 async function generateBatch2(){
+  if(window._isSpecialTopic && window._specialTopics && window._specialTopics.length > 1){
+    return generateSpecialBatch2();
+  }
   if(!selectedTopic)return;
   var key=getApiKey();
   if(!key){showKeyModal();return;}
@@ -2328,15 +2449,6 @@ function updProg(){
   document.getElementById('pubSub').textContent=done+' / '+total+' 完成';
   document.getElementById('pubSuccess').style.display=done===total?'block':'none';
 }
-function newContent(){
-  selectedTopic=null;outputFull='';checkState={};window._topics=[];
-  document.getElementById('discoverHero').classList.remove('compact');
-  document.getElementById('discoverResults').style.display='none';
-  document.getElementById('discoverLoading').style.display='none';
-  document.getElementById('searchInput').value='';
-  nav('discover');
-}
-
 /* ═══════════════════════════════════════════
    INIT
 ═══════════════════════════════════════════ */
@@ -2677,6 +2789,278 @@ function sb3Download(filename,content,mime){
 
 function sb3Esc(s){
   return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+/* ═══════════════════════════════════════════
+   专题模式 SPECIAL TOPIC MODE
+═══════════════════════════════════════════ */
+window._specialSelected = {};   // {topicIndex: true}
+window._specialMode = false;    // 是否处于选择模式
+window._isSpecialTopic = false; // 当前生产页是否专题模式
+window._specialTopics = [];     // 专题选中的topic对象数组
+
+function toggleSelectMode(){
+  window._specialMode = !window._specialMode;
+  var btn = document.getElementById('selectModeBtn');
+  if(window._specialMode){
+    btn.style.background = 'var(--accent)';
+    btn.style.color = '#fff';
+    btn.textContent = '✕ 退出多选';
+  } else {
+    btn.style.background = 'transparent';
+    btn.style.color = 'var(--accent)';
+    btn.textContent = '☑ 专题多选';
+    clearSpecialSelection();
+  }
+}
+
+function toggleSpecialSelect(i){
+  if(!window._specialMode){
+    // 未开启多选模式时点勾选框自动开启
+    window._specialMode = true;
+    var btn = document.getElementById('selectModeBtn');
+    if(btn){ btn.style.background='var(--accent)'; btn.style.color='#fff'; btn.textContent='✕ 退出多选'; }
+  }
+  if(window._specialSelected[i]){
+    delete window._specialSelected[i];
+  } else {
+    var keys = Object.keys(window._specialSelected).length;
+    if(keys >= 20){ showToast('最多选择20篇论文'); return; }
+    window._specialSelected[i] = true;
+  }
+  // 更新勾选框样式
+  var chk = document.getElementById('chk-'+i);
+  if(chk){
+    chk.classList.toggle('checked', !!window._specialSelected[i]);
+  }
+  updateSpecialBar();
+}
+
+function updateSpecialBar(){
+  var keys = Object.keys(window._specialSelected).map(Number);
+  var bar = document.getElementById('specialBar');
+  if(keys.length === 0){
+    bar.style.display = 'none'; return;
+  }
+  bar.style.display = 'flex';
+  document.getElementById('specialCount').textContent = '已选 '+keys.length+' 篇';
+  var titles = keys.map(function(i){
+    var t = window._topics && window._topics[i];
+    return t ? t.title : '';
+  }).filter(Boolean);
+  document.getElementById('specialTitles').textContent = titles.join(' · ');
+}
+
+function clearSpecialSelection(){
+  Object.keys(window._specialSelected).forEach(function(i){
+    var chk = document.getElementById('chk-'+i);
+    if(chk) chk.classList.remove('checked');
+  });
+  window._specialSelected = {};
+  document.getElementById('specialBar').style.display = 'none';
+}
+
+function startSpecialTopic(){
+  var keys = Object.keys(window._specialSelected).map(Number);
+  if(keys.length < 2){ showToast('请至少选择2篇论文'); return; }
+  var topics = keys.map(function(i){ return window._topics && window._topics[i]; }).filter(Boolean);
+  if(topics.length === 0){ showToast('选题数据丢失，请重新搜索'); return; }
+  window._isSpecialTopic = true;
+  window._specialTopics = topics;
+  // 取第一篇作为 selectedTopic（用于基础信息），但实际内容会用所有论文
+  selectedTopic = topics[0];
+  selectedTopic._isSpecial = true;
+  clearSpecialSelection();
+  window._specialMode = false;
+  var btn = document.getElementById('selectModeBtn');
+  if(btn){ btn.style.background='transparent'; btn.style.color='var(--accent)'; btn.textContent='☑ 专题多选'; }
+  nav('produce');
+}
+
+/* 专题模式：构建多论文摘要上下文（分批处理超长内容）*/
+function buildSpecialContext(){
+  var topics = window._specialTopics || [];
+  // 每篇摘要最多400字，避免单次超token
+  var ABSTRACT_LIMIT = 400;
+  var paperBlocks = topics.map(function(t, i){
+    var ab = (t.srcPaper && t.srcPaper.abstract) ? t.srcPaper.abstract.slice(0, ABSTRACT_LIMIT) : '（无摘要）';
+    var journal = (t.srcPaper && t.srcPaper.journal) ? t.srcPaper.journal : (t.paper || '');
+    var year = (t.srcPaper && t.srcPaper.year) ? t.srcPaper.year : '';
+    return '【论文'+(i+1)+'】\n标题：'+t.title+'\n英文标题：'+(t.english_title||'')+'\n来源：'+journal+' '+year+'\n摘要：'+ab;
+  });
+
+  // 总字数估算，超过12000字则分段（每段约4000字）
+  var full = paperBlocks.join('\n\n---\n\n');
+  var CHUNK = 4000;
+  if(full.length <= CHUNK * 3){
+    return [full]; // 单段即可
+  }
+  // 分段：每3篇一组
+  var chunks = [];
+  for(var i = 0; i < paperBlocks.length; i += 3){
+    chunks.push(paperBlocks.slice(i, i+3).join('\n\n---\n\n'));
+  }
+  return chunks;
+}
+
+/* 专题模式：生成脚本（支持多轮摘要注入）*/
+async function generateSpecialBatch1(){
+  var topics = window._specialTopics || [];
+  if(topics.length === 0) return;
+  var key = getApiKey();
+  if(!key){ showKeyModal(); return; }
+
+  document.getElementById('genBtn1').disabled = true;
+  document.getElementById('genArea1').style.display = 'none';
+  document.getElementById('genLoading1').style.display = 'block';
+  document.getElementById('outputArea1').style.display = 'none';
+
+  var timer = startTimer('genSubLine1',[
+    '整合'+topics.length+'篇论文摘要...',
+    '构建专题知识体系...',
+    '规划纪录片结构...',
+    '撰写开场钩子...',
+    '逐章展开核心发现...',
+    '撰写英文专题脚本...',
+    '打磨科普语言...'
+  ]);
+
+  var contextChunks = buildSpecialContext();
+  var topicNames = topics.map(function(t,i){ return (i+1)+'. '+t.title; }).join('\n');
+  var totalPapers = topics.length;
+
+  // 如果只有一段直接注入，多段先用 callClaude 做摘要合并再生成
+  var mergedContext = '';
+  if(contextChunks.length === 1){
+    mergedContext = contextChunks[0];
+  } else {
+    // 多批摘要先让 AI 提炼关键点，再合并
+    var summaries = [];
+    for(var ci = 0; ci < contextChunks.length; ci++){
+      var chunkSys = '你是生物医学文献分析专家。从以下论文摘要中提炼每篇的核心发现、关键数据和机制，每篇用3-5句话概括，保留所有具体数字。直接输出，不加额外说明。';
+      var chunkMsg = '请提炼以下'+(Math.min(3, totalPapers - ci*3))+'篇论文的核心内容：\n\n'+contextChunks[ci];
+      try{
+        var s = await callClaude(chunkSys, chunkMsg, 1500);
+        summaries.push('【第'+(ci+1)+'组论文核心】\n'+s);
+      }catch(e){
+        summaries.push(contextChunks[ci].slice(0, 800));
+      }
+    }
+    mergedContext = summaries.join('\n\n');
+  }
+
+  var ref = buildRefContext();
+  var refSection = ref.textBlock ? '\n\n=== 用户补充资料 ===\n'+ref.textBlock+'\n=== 补充资料结束 ===' : '';
+
+  var specialSys = getDocStyle();
+  var specialMsg =
+    '你是顶级科学纪录片编剧，擅长把多篇前沿论文整合成一部引人入胜的深度专题纪录片脚本。\n\n'
+    +'本次专题包含 '+totalPapers+' 篇同主题学术论文，请综合所有论文的发现，'
+    +'同时调用你对该领域的系统性知识（截止2025年），创作一部完整的深度科普专题。\n\n'
+    +'=== 论文资料 ===\n'+mergedContext+refSection+'\n=== 资料结束 ===\n\n'
+    +'防降权规则：\n'
+    +'- 永远用"研究发现/研究表明/研究提示"，不用"治愈/证明有效/临床证明"\n'
+    +'- 明确区分相关性与因果关系\n'
+    +'- 末尾给出1-3条实用建议\n\n'
+    +'请生成以下两个脚本：\n\n'
+    +'### 1. YouTube 中文专题脚本（目标时长 12-20 分钟）\n'
+    +'结构：\n'
+    +'- 震撼开场 Hook（30秒，用最惊人的发现吸引注意力）\n'
+    +'- 专题背景（这个话题为什么重要，影响多少人）\n'
+    +'- 核心章节（每篇论文一个章节，标题用##，深挖该论文的发现、数据、机制）\n'
+    +'- 综合分析（多篇研究共同指向什么结论）\n'
+    +'- 科学局限性（这些研究还不能证明什么）\n'
+    +'- 实用行动建议\n'
+    +'- 有力结尾\n'
+    +'每个章节都要加 *[Visual: ...]* 画面提示。全文不要截断。\n\n'
+    +'### 2. YouTube 英文专题脚本（12-20 分钟）\n'
+    +'Same comprehensive structure for English-speaking audience. Include *[Visual: ...]*. Do not truncate.';
+
+  var outEl = document.getElementById('outputBox1');
+  outEl.textContent = '';
+  var buf = '';
+  try{
+    await callClaudeStreamWithImages(specialSys, specialMsg, ref.imageBlocks, function(chunk){
+      if(document.getElementById('genLoading1').style.display !== 'none'){
+        clearInterval(timer);
+        document.getElementById('genLoading1').style.display = 'none';
+        document.getElementById('outputArea1').style.display = 'block';
+      }
+      buf += chunk; outEl.textContent = buf; outEl.scrollTop = outEl.scrollHeight;
+      document.getElementById('wordCount1').textContent = '生成中… '+buf.length+'字';
+    });
+    outputFull = buf;
+    document.getElementById('wordCount1').textContent = '共'+buf.length+'字';
+    checkPublishRow();
+    revealBatch3();
+  }catch(e){
+    clearInterval(timer);
+    document.getElementById('genLoading1').style.display = 'none';
+    document.getElementById('genArea1').style.display = 'block';
+    document.getElementById('genBtn1').disabled = false;
+    alert('生成出错：'+e.message);
+  }
+}
+
+async function generateSpecialBatch2(){
+  var topics = window._specialTopics || [];
+  if(topics.length === 0) return;
+  var key = getApiKey();
+  if(!key){ showKeyModal(); return; }
+
+  document.getElementById('genBtn2').disabled = true;
+  document.getElementById('genArea2').style.display = 'none';
+  document.getElementById('genLoading2').style.display = 'block';
+  document.getElementById('outputArea2').style.display = 'none';
+
+  var timer = startTimer('genSubLine2',[
+    '提炼专题精华...',
+    '压缩为60秒钩子...',
+    '撰写TikTok中文版...',
+    '撰写TikTok英文版...',
+    '生成专题配图提示词...'
+  ]);
+
+  var topicNames = topics.map(function(t){ return t.title; }).join('、');
+  var script1 = document.getElementById('outputBox1').textContent || '';
+  var scriptRef = script1.length > 500 ? '（基于已生成的专题脚本精华）' : '';
+
+  var ref = buildRefContext();
+  var msg =
+    '这是一个关于【'+topicNames+'】的多论文综合专题'+scriptRef+'。\n\n'
+    +'请生成：\n\n'
+    +'### 1. TikTok 中文口播稿（60秒）\n'
+    +'用最震撼的1-2个发现作钩子，每句≤12字，口语化，提示"完整分析在YouTube"。相关性vs因果关系需提及。\n\n'
+    +'### 2. TikTok English Script（60秒）\n'
+    +'Hook with the most shocking finding, casual punchy style, note correlation vs causation.\n\n'
+    +'### 3. 专题配图提示词（3张）\n'
+    +'---Cover 16:9---\n[震撼的专题封面，体现'+topics[0].title+'等多研究综合]\n'
+    +'---Data Infographic---\n[核心数据可视化]\n'
+    +'---Mechanism Overview---\n[专题核心机制总图]';
+
+  var outEl = document.getElementById('outputBox2');
+  outEl.textContent = '';
+  var buf = '';
+  try{
+    await callClaudeStreamWithImages(getDocStyle(), msg, ref.imageBlocks, function(chunk){
+      if(document.getElementById('genLoading2').style.display !== 'none'){
+        clearInterval(timer);
+        document.getElementById('genLoading2').style.display = 'none';
+        document.getElementById('outputArea2').style.display = 'block';
+      }
+      buf += chunk; outEl.textContent = buf; outEl.scrollTop = outEl.scrollHeight;
+      document.getElementById('wordCount2').textContent = '生成中… '+buf.length+'字';
+    });
+    document.getElementById('wordCount2').textContent = '共'+buf.length+'字';
+    outputFull = (document.getElementById('outputBox1').textContent||'')+'\n\n---\n\n'+buf;
+    checkPublishRow();
+  }catch(e){
+    clearInterval(timer);
+    document.getElementById('genLoading2').style.display = 'none';
+    document.getElementById('genArea2').style.display = 'block';
+    document.getElementById('genBtn2').disabled = false;
+    alert('生成出错：'+e.message);
+  }
 }
 
 function revealBatch3(){
