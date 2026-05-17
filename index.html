@@ -692,7 +692,7 @@ async function advanceCrawlWindow(s,success){
       if(n%7===0){s.winStart=0;s.winEnd=7;}
       else{s.winStart+=7;s.winEnd+=7;}
     }
-    s.dirIdx=(s.dirIdx+3)%ALL_DIRS.length;
+    s.dirIdx=(s.dirIdx+15)%ALL_DIRS.length;
     s.lastRun=new Date().toISOString().slice(0,10);
   }
   await stSet(SK_STATE,s);
@@ -1125,7 +1125,7 @@ async function runDailyCrawl(onStatus){
   if(s.lastRun===today&&stats.total>0){onStatus('done_today',s);return s;}
   onStatus('start',s);
   var dirs=[];
-  for(var i=0;i<3;i++)dirs.push(ALL_DIRS[(s.dirIdx+i)%ALL_DIRS.length]);
+  for(var i=0;i<15;i++)dirs.push(ALL_DIRS[(s.dirIdx+i)%ALL_DIRS.length]);
   onStatus('fetch',dirs.join(' + '));
   var all=[];
 
@@ -1211,41 +1211,38 @@ async function doSearch(){
     setMsg('AI评分中...','库存'+stats.total+'篇 未评'+stats.unscored+'篇');
 
     var allTopics=[];
+    var batchNum=0;
+    var maxBatches=6; // safety cap: max 6 batches
 
-    /* First batch */
-    var batch1=await getUnscored(SCORE_N);
-    dbg('batch1 count='+batch1.length);
-    if(batch1.length>0){
-      var r1=await scoreNextBatch(batch1);
-      var p1=parseTopics(r1.text,r1.papers);
-      dbg('batch1 parsed='+p1.length);
-      allTopics=allTopics.concat(p1);
-    }
+    while(allTopics.length<60&&batchNum<maxBatches){
+      batchNum++;
+      var batch=await getUnscored(SCORE_N);
+      dbg('batch'+batchNum+' count='+batch.length);
 
-    /* Second batch if needed */
-    if(allTopics.length<4){
-      var batch2=await getUnscored(SCORE_N);
-      dbg('batch2 count='+batch2.length);
-      if(batch2.length>0){
-        setMsg('扩大评分范围...','');
-        var r2=await scoreNextBatch(batch2);
-        var p2=parseTopics(r2.text,r2.papers);
-        dbg('batch2 parsed='+p2.length);
-        allTopics=allTopics.concat(p2);
+      // If no unscored papers left, re-score the full DB
+      if(batch.length===0){
+        var db=await getPaperDB();
+        if(db.papers.length===0)break;
+        await stSet(SK_SCORED,{}); // reset scored flags
+        batch=await getUnscored(SCORE_N);
+        dbg('reset scored, re-fetching batch: '+batch.length);
+        if(batch.length===0)break;
       }
-    }
 
-    /* Fallback: re-score most recent papers */
-    if(allTopics.length===0){
-      var db=await getPaperDB();
-      var sample=db.papers.slice(-SCORE_N);
-      dbg('fallback sample='+sample.length);
-      if(sample.length>0){
-        setMsg('重新评分最新论文...','');
-        var r3=await scoreNextBatch(sample);
-        allTopics=parseTopics(r3.text,r3.papers);
-        dbg('fallback parsed='+allTopics.length);
-      }
+      setMsg('AI评分第'+batchNum+'轮...','已有'+allTopics.length+'篇，目标60篇');
+      var r=await scoreNextBatch(batch);
+      var parsed=parseTopics(r.text,r.papers);
+      dbg('batch'+batchNum+' parsed='+parsed.length);
+      allTopics=allTopics.concat(parsed);
+
+      // Deduplicate by title
+      var seen={};
+      allTopics=allTopics.filter(function(t){
+        var k=t.title.slice(0,20);
+        if(seen[k])return false;
+        seen[k]=true;return true;
+      });
+      dbg('after dedup: '+allTopics.length);
     }
 
     document.getElementById('discoverLoading').style.display='none';
@@ -1290,7 +1287,7 @@ async function scoreNextBatch(papers){
   }).join(sep);
 
   var sys='You are a science communication expert. Output ONLY lines starting with TOPIC|. Zero other text.';
-  var prompt='Evaluate these papers for YouTube/TikTok health science impact. Output ALL papers scoring above 55.\n\n'
+  var prompt='Evaluate these papers for YouTube/TikTok health science impact. Output ALL papers regardless of score.\n\n'
     +'7-DIMENSION SCORING (total 100 points):\n\n'
     +'1. PersonalStakes(20): Rate by affected population SIZE x personal pain intensity.\n'
     +'   Cancer/diabetes/Alzheimer/heart disease patients+families globally: 16-20\n'
@@ -1330,7 +1327,7 @@ async function scoreNextBatch(papers){
     +'CHINESE TITLE: punchy ONE-LINE finding statement with specific data.\n'
     +'GOOD: "II型糖尿病患者86%通过饮食逆转停药" "每天30分钟步行降低41%阿尔茨海默风险"\n'
     +'BAD: "微塑料危害研究" "睡眠与健康关系" "癌症新发现"\n\n'
-    +'Output format - one line per paper scoring above 55:\n'
+    +'Output format - one line per paper (ALL papers):\n'
     +'TOPIC|Chinese headline max 24 chars|English title|triggers|Journal Year|TotalScore|PersonalStakes|HopeAction|Extremity|Urgency|VividNumbers|EvidenceQuality|TopicRarity|CategoryKeyword|safe or warn|PaperNumber\n\n'
     +'PAPERS:\n'+paperList;
 
@@ -1360,7 +1357,7 @@ function parseTopics(text,papers){
     var s6=parseInt(p[11])||0;
     var s7=parseInt(p[12])||0;
     var total=parseInt(p[5])||(s1+s2+s3+s4+s5+s6+s7);
-    if(total<55)return;
+    if(total<1)return;
     var catKey=(p[13]||'').trim();
     var sl=(p[14]||'safe').trim().toLowerCase();
     var pidx=parseInt(p[15])-1;
