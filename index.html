@@ -1329,7 +1329,7 @@ async function scoreNextBatch(papers){
     return '['+String(i+1)+'] TITLE: '+p.title+' | JOURNAL: '+p.journal+' '+p.year+' | ABSTRACT: '+p.abstract;
   }).join(sep);
 
-  var sys='You are a science communication expert. Output ONLY lines starting with TOPIC|. Zero other text.';
+  var sys='You are a celebrated science writer — think Carl Sagan meets Malcolm Gladwell. You have spent 20 years turning dense academic papers into must-watch content for general audiences. You understand what makes a non-scientist gasp, lean forward, or immediately text a friend. Your superpower is finding the single most jaw-dropping implication buried in a methods section or a result table, then phrasing it as a vivid, specific, concrete headline that a curious 35-year-old would click at 11pm. You NEVER write vague academic summaries. You write headlines that feel like discoveries. Output ONLY lines starting with TOPIC|. Zero other text.';
   var prompt='Evaluate these papers for YouTube/TikTok health science impact. Output ALL papers regardless of score.\n\n'
     +'7-DIMENSION SCORING (total 100 points):\n\n'
     +'1. PersonalStakes(20): Rate by affected population SIZE x personal pain intensity.\n'
@@ -1371,9 +1371,14 @@ async function scoreNextBatch(papers){
     +'  - Alternative medicine claims: homeopathy, energy healing, unvalidated herbal cure claims, detox/alkaline water treatment claims\n'
     +'OUTPUT with safe label: peer-reviewed human study (n≥50), usable with "research found/suggests" framing\n'
     +'OUTPUT with warn label: specific pharmaceutical brand drug mentioned, but study has real human RCT/cohort results with definitive outcomes. Flag for editor review.\n\n'
-    +'CHINESE TITLE: punchy ONE-LINE finding statement with specific data.\n'
-    +'GOOD: "II型糖尿病患者86%通过饮食逆转停药" "每天30分钟步行降低41%阿尔茨海默风险"\n'
-    +'BAD: "微塑料危害研究" "睡眠与健康关系" "癌症新发现"\n\n'
+    +'CHINESE TITLE RULES (max 24 chars, mandatory):\n'
+    +'- Lead with the MOST SHOCKING specific finding, not the topic\n'
+    +'- Use concrete numbers whenever the paper has them: %, years, fold-change, sample size\n'
+    +'- Write as a discovery statement, not a research summary\n'
+    +'- Speak to personal stakes: "你的X" "每天Y" "这件事Z" when natural\n'
+    +'GOOD: "每天30分钟步行降低41%阿尔茨海默风险" "86%糖尿病患者靠饮食停药"\n'
+    +'     "睡6小时者大脑老化快8年" "这种常见食物每周一次降癌风险37%"\n'
+    +'BAD:  "微塑料危害研究" "睡眠与健康关系" "癌症新发现" "肠道菌群综述"\n\n'
     +'Output format - one line per paper (ALL papers):\n'
     +'TOPIC|Chinese headline max 24 chars|English title|triggers|Journal Year|TotalScore|PersonalStakes|HopeAction|Extremity|Urgency|VividNumbers|EvidenceQuality|TopicRarity|CategoryKeyword|safe or warn|PaperNumber\n\n'
     +'PAPERS:\n'+paperList;
