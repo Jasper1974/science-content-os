@@ -383,12 +383,13 @@ body {
   <div class="panel active" id="panel-discover">
     <div class="discover-hero" id="discoverHero">
       <div class="hero-title">今日选题</div>
-      <div class="hero-sub">留空自动搜索 · 输入方向精准搜索 · AI 评分 · 你来选</div>
+      <div class="hero-sub"></div>
       <div class="search-wrap">
         <input class="search-input" id="searchInput" type="text"
           placeholder="留空自动搜索，或输入方向…"
           onkeydown="if(event.key==='Enter')doSearch()" />
         <button class="search-btn" id="searchBtn" onclick="doSearch()">⚡ 搜索</button>
+        <button class="search-btn" id="stopBtn" onclick="stopSearch()" style="display:none;background:var(--red)">■ 停止</button>
       </div>
       <div class="quick-tags" id="quickTags"></div>
     </div>
@@ -598,7 +599,18 @@ var ALL_DIRS=[
   'sleep deprivation irreversible brain damage mechanism',
   'plant extract cancer cell death surprising compound 2024'
 ];
-var QTAGS=['营养与日常食物','睡眠与大脑','环境污染与身体','男女健康差异','运动与代谢','肠道菌群与免疫','衰老与细胞','心理与生理','日常习惯隐藏影响','常见植物未知作用','微塑料与污染物','皮肤与身体信号'];
+var QTAGS_LABELS=[
+  '癌症预防逆转','癌症免疫治疗','心脏病隐藏风险','心血管逆转','心源性猝死','中风预防','植物化合物抗癌',
+  '长寿衰老逆转','生物年龄逆转','衰老细胞清除','端粒延长','自噬激活','NAD+恢复','线粒体修复',
+  '阿尔茨海默预防','痴呆风险降低','记忆保护','认知逆转','脑炎症预防',
+  '二型糖尿病逆转','胰岛素抵抗','代谢综合征','肥胖根因','血糖调控',
+  '食物抗癌证据','日常习惯防癌','早期筛查新法','肠道菌群与癌','炎症抑制',
+  '心脏病饮食逆转','冠脉斑块消退','非药物降压','房颤隐藏诱因','心衰预防',
+  '男性生育力下降','女性生育保护','内分泌干扰物','激素失衡环境因素','睾酮雌激素逆转',
+  '抑郁生物机制','焦虑肠脑轴','心理与肠道菌群','压力器官损伤','PTSD治疗突破',
+  '超加工食品损伤','普通食物健康益处','禁食时间效应','蛋白质来源与寿命','发酵食品免疫',
+  '微塑料器官积累','家用化学品危害','止痛药隐藏损伤','睡眠剥夺脑损伤','植物提取物抗癌'
+];
 var CL=[
   {id:'c0',l:'脚本数据核对',d:'每个数字对照原论文确认'},
   {id:'c1',l:'措辞安全检查',d:'确认无治愈治疗临床证明等词'},
@@ -641,9 +653,17 @@ function nav(p){
   if(p==='publish')buildChecklist();
   window.scrollTo(0,0);
 }
-function initTags(){
-  document.getElementById('quickTags').innerHTML=QTAGS.map(function(t){
-    return '<button class="qtag" onclick="useTag(this.dataset.t)" data-t="'+t+'">'+t+'</button>';
+var _searchStopped=false;
+function stopSearch(){
+  _searchStopped=true;
+  document.getElementById('stopBtn').style.display='none';
+  document.getElementById('searchBtn').style.display='inline-block';
+  document.getElementById('searchBtn').disabled=false;
+  document.getElementById('discoverLoading').style.display='none';
+}
+  document.getElementById('quickTags').innerHTML=QTAGS_LABELS.map(function(label,idx){
+    var dir=ALL_DIRS[idx]||label;
+    return '<button class="qtag" onclick="useTag(this.dataset.t)" data-t="'+dir+'">'+label+'</button>';
   }).join('');
 }
 function useTag(t){document.getElementById('searchInput').value=t;doSearch();}
@@ -1164,6 +1184,9 @@ async function doSearch(){
   document.getElementById('discoverResults').style.display='none';
   document.getElementById('discoverLoading').style.display='block';
   document.getElementById('searchBtn').disabled=true;
+  document.getElementById('searchBtn').style.display='none';
+  document.getElementById('stopBtn').style.display='inline-block';
+  _searchStopped=false;
 
   function setMsg(m,s){
     document.getElementById('loadMsg').textContent=m;
@@ -1215,6 +1238,7 @@ async function doSearch(){
     var maxBatches=6; // safety cap: max 6 batches
 
     while(allTopics.length<60&&batchNum<maxBatches){
+      if(_searchStopped){dbg('Search stopped by user');break;}
       batchNum++;
       var batch=await getUnscored(SCORE_N);
       dbg('batch'+batchNum+' count='+batch.length);
@@ -1247,6 +1271,8 @@ async function doSearch(){
 
     document.getElementById('discoverLoading').style.display='none';
     document.getElementById('searchBtn').disabled=false;
+    document.getElementById('searchBtn').style.display='inline-block';
+    document.getElementById('stopBtn').style.display='none';
     dbg('FINAL topics='+allTopics.length);
 
     if(allTopics.length===0){
@@ -1262,6 +1288,8 @@ async function doSearch(){
     dbg('CAUGHT ERROR: '+e.message);
     document.getElementById('discoverLoading').style.display='none';
     document.getElementById('searchBtn').disabled=false;
+    document.getElementById('searchBtn').style.display='inline-block';
+    document.getElementById('stopBtn').style.display='none';
     showErr('错误: '+e.message);
   }
 }
@@ -1440,10 +1468,11 @@ function renderTopics(topics,stats){
       +'</div>';
     return '<div style="border-bottom:1px solid var(--border)">'
       +'<div class="trow" style="display:flex;align-items:center;padding:7px 10px;cursor:pointer;gap:6px" onclick="toggleDetail('+i+',event)">'
-      +'<span style="font-size:12px;font-weight:800;color:'+scoreColor+';min-width:26px;text-align:right;flex-shrink:0">'+t.total+'</span>'
+      +'<span style="font-size:10px;color:var(--text3);min-width:18px;text-align:right;flex-shrink:0;font-family:DM Mono,monospace">'+(i+1)+'</span>'
       +pm+warnIcon
       +'<span style="font-size:13px;font-weight:600;flex:1;line-height:1.3">'+t.title+'</span>'
-      +'<span style="font-size:9px;color:var(--text3);flex-shrink:0;font-family:DM Mono,monospace">'+t.paper.slice(0,18)+'</span>'
+      +'<span style="font-size:12px;font-weight:800;color:'+scoreColor+';flex-shrink:0;font-family:DM Mono,monospace">'+t.total+'</span>'
+      +'<span style="font-size:9px;color:var(--text3);flex-shrink:0;font-family:DM Mono,monospace;max-width:70px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+t.paper.slice(0,18)+'</span>'
       +'<span id="ta-'+i+'" style="color:var(--text3);font-size:10px;flex-shrink:0;margin-left:3px">▼</span>'
       +'</div>'
       +detail
