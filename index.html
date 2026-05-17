@@ -396,6 +396,57 @@ body {
   body { padding-bottom: 64px; }
 }
 @media(min-width: 701px) { .mob-nav { display: none !important; } }
+
+/* ── BATCH 3: 分镜表 ─────────────────────────────────────── */
+#batch3Section { margin-top:20px; padding-top:20px; border-top:1px solid var(--border); display:none; }
+.sb3-panel { background:var(--surface); border:1px solid var(--border); border-radius:14px; padding:18px 20px; }
+.sb3-ctrl { background:var(--surface2); border:1px solid var(--border); border-radius:10px; padding:14px 16px; margin-bottom:14px; }
+.sb3-ctrl-row { display:flex; align-items:center; gap:12px; flex-wrap:wrap; margin-bottom:10px; }
+.sb3-ctrl-row:last-child { margin-bottom:0; }
+.sb3-label { font-size:10px; font-weight:600; letter-spacing:0.12em; text-transform:uppercase; color:var(--text2); font-family:'DM Mono',monospace; min-width:64px; }
+.sb3-slider-wrap { display:flex; align-items:center; gap:8px; flex:1; min-width:160px; }
+.sb3-slider-wrap input[type=range] { flex:1; accent-color:var(--accent); }
+.sb3-val { font-family:'DM Mono',monospace; font-size:12px; font-weight:600; color:var(--teal); min-width:34px; }
+.sb3-presets { display:flex; gap:6px; flex-wrap:wrap; }
+.sb3-preset { padding:4px 10px; border-radius:6px; border:1px solid var(--border2); background:transparent; color:var(--text2); font-size:11px; font-family:'DM Mono',monospace; cursor:pointer; transition:all 0.15s; }
+.sb3-preset:hover { border-color:var(--accent); color:var(--accent); }
+.sb3-preset.active { border-color:var(--accent); color:var(--accent); background:var(--accent-glow); }
+.sb3-strat { display:flex; gap:6px; }
+.sb3-strat-btn { padding:4px 10px; border-radius:6px; border:1px solid var(--border2); background:transparent; color:var(--text2); font-size:11px; font-family:'DM Mono',monospace; cursor:pointer; transition:all 0.15s; }
+.sb3-strat-btn.active { border-color:var(--teal); color:var(--teal); background:#4fd1c510; }
+.sb3-speed-wrap { display:flex; align-items:center; gap:8px; }
+.sb3-speed-wrap input[type=range] { width:90px; accent-color:var(--teal); }
+.sb3-status-pill { padding:3px 10px; border-radius:20px; font-size:11px; font-family:'DM Mono',monospace; font-weight:600; }
+.sb3-pill-ok { background:#22c55e12; color:var(--green); border:1px solid #22c55e30; }
+.sb3-pill-low { background:#f59e0b12; color:var(--amber); border:1px solid #f59e0b30; }
+.sb3-pill-over { background:#ef444412; color:var(--red); border:1px solid #ef444430; }
+.sb3-timeline { height:22px; border-radius:6px; overflow:hidden; display:flex; gap:1px; background:var(--border); margin-bottom:12px; }
+.sb3-tl-seg { display:flex; align-items:center; justify-content:center; overflow:hidden; transition:flex 0.35s ease; }
+.sb3-tl-seg span { font-size:9px; color:#fff; white-space:nowrap; font-family:'DM Mono',monospace; font-weight:600; }
+#storyboardTable { width:100%; border-collapse:collapse; font-size:12px; table-layout:fixed; }
+#storyboardTable th { background:var(--surface2); text-align:left; padding:7px 8px; border-bottom:1px solid var(--border2); font-size:10px; font-weight:600; letter-spacing:0.08em; text-transform:uppercase; color:var(--text2); font-family:'DM Mono',monospace; }
+#storyboardTable td { padding:9px 8px; border-bottom:1px solid var(--border); vertical-align:top; line-height:1.5; }
+#storyboardTable tr:last-child td { border-bottom:none; }
+#storyboardTable tr:hover td { background:var(--surface2); }
+.sb-num { font-weight:600; color:var(--text3); font-size:10px; text-align:center; }
+.sb-time { font-family:'DM Mono',monospace; font-size:10px; color:var(--text2); white-space:nowrap; }
+.sb-dur-cell { font-family:'DM Mono',monospace; font-size:11px; text-align:center; }
+.sb-dur-new { color:var(--teal); font-weight:600; }
+.sb-dur-old { color:var(--text3); text-decoration:line-through; font-size:10px; display:block; }
+.sb-nar { color:var(--text); font-size:12px; }
+.sb-vis { color:var(--text2); font-size:11px; }
+.sb-prompt { font-family:'DM Mono',monospace; font-size:10px; color:#7c9cfc; word-break:break-word; }
+.sb-prompt.loading { color:var(--text3); font-style:italic; }
+.sb-copy-prompt { margin-top:5px; padding:2px 8px; border-radius:4px; background:transparent; border:1px solid var(--border2); color:var(--text3); font-size:10px; cursor:pointer; font-family:'DM Mono',monospace; transition:all 0.15s; }
+.sb-copy-prompt:hover { border-color:var(--accent); color:var(--accent); }
+.sb3-status-badge { display:inline-block; padding:2px 8px; border-radius:20px; font-size:10px; font-weight:600; cursor:pointer; font-family:'DM Mono',monospace; transition:all 0.15s; user-select:none; }
+.sb3-todo { background:var(--surface2); color:var(--text3); border:1px solid var(--border2); }
+.sb3-wip  { background:#f59e0b12; color:var(--amber); border:1px solid #f59e0b30; }
+.sb3-done { background:#22c55e12; color:var(--green); border:1px solid #22c55e30; }
+.sb3-toolbar { display:flex; align-items:center; gap:8px; flex-wrap:wrap; margin-bottom:10px; }
+.sb3-export { padding:5px 12px; border-radius:6px; background:transparent; border:1px solid var(--border2); color:var(--text2); font-size:11px; font-family:'DM Mono',monospace; cursor:pointer; transition:all 0.15s; }
+.sb3-export:hover { border-color:var(--teal); color:var(--teal); }
+.sb3-stats { font-size:11px; color:var(--text2); font-family:'DM Mono',monospace; padding:4px 10px; background:var(--surface2); border-radius:6px; border:1px solid var(--border); }
 </style>
 </head>
 <body>
@@ -592,6 +643,94 @@ body {
       <div id="publishRow" style="display:none;margin-top:16px">
         <button class="btn-primary full" onclick="nav('publish')">进入发布清单 →</button>
       </div>
+
+      <!-- BATCH 3: 分镜表 -->
+      <div id="batch3Section">
+        <div class="sb3-panel">
+          <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;margin-bottom:14px">
+            <div>
+              <span class="gen-lbl">第三步 · 分镜表</span>
+              <div style="font-size:11px;color:var(--text2);font-family:'DM Mono',monospace">从脚本提取画面节点，按旁白字数分配时长，生成 Kling / Veo prompt</div>
+            </div>
+            <button class="btn-primary" id="genBtn3" onclick="generateBatch3()" style="padding:9px 16px;font-size:13px">✦ 生成分镜表</button>
+          </div>
+          <div class="sb3-ctrl">
+            <div class="sb3-ctrl-row">
+              <span class="sb3-label">最短时长</span>
+              <div class="sb3-slider-wrap">
+                <input type="range" id="sb3MinSlider" min="3" max="20" value="6" step="1" oninput="sb3SliderChange()">
+                <span class="sb3-val" id="sb3MinVal">6:00</span>
+              </div>
+              <span class="sb3-label" style="margin-left:8px">最长时长</span>
+              <div class="sb3-slider-wrap">
+                <input type="range" id="sb3MaxSlider" min="3" max="25" value="12" step="1" oninput="sb3SliderChange()">
+                <span class="sb3-val" id="sb3MaxVal">12:00</span>
+              </div>
+            </div>
+            <div class="sb3-ctrl-row">
+              <span class="sb3-label">预设</span>
+              <div class="sb3-presets">
+                <button class="sb3-preset" onclick="sb3SetPreset(5,7,this)">TikTok 5–7min</button>
+                <button class="sb3-preset active" onclick="sb3SetPreset(8,12,this)">YouTube 8–12min</button>
+                <button class="sb3-preset" onclick="sb3SetPreset(12,18,this)">深度 12–18min</button>
+                <button class="sb3-preset" onclick="sb3SetPreset(18,22,this)">长片 18–22min</button>
+              </div>
+            </div>
+            <div class="sb3-ctrl-row">
+              <span class="sb3-label">分配策略</span>
+              <div class="sb3-strat">
+                <button class="sb3-strat-btn active" id="sb3-strat-narration" onclick="sb3SetStrategy('narration',this)">按旁白字数</button>
+                <button class="sb3-strat-btn" id="sb3-strat-type" onclick="sb3SetStrategy('type',this)">场景类型加权</button>
+                <button class="sb3-strat-btn" id="sb3-strat-equal" onclick="sb3SetStrategy('equal',this)">均匀分配</button>
+              </div>
+            </div>
+            <div class="sb3-ctrl-row">
+              <span class="sb3-label">语速</span>
+              <div style="display:flex;gap:16px;flex-wrap:wrap">
+                <div class="sb3-speed-wrap">
+                  <span style="font-size:11px;color:var(--text2)">中文</span>
+                  <input type="range" id="sb3SpeedZh" min="3" max="5.5" value="4" step="0.5" oninput="document.getElementById('sb3SpeedZhVal').textContent=parseFloat(this.value).toFixed(1)+'字/秒'">
+                  <span class="sb3-val" id="sb3SpeedZhVal">4.0字/秒</span>
+                </div>
+                <div class="sb3-speed-wrap">
+                  <span style="font-size:11px;color:var(--text2)">英文</span>
+                  <input type="range" id="sb3SpeedEn" min="1.5" max="3" value="2.3" step="0.1" oninput="document.getElementById('sb3SpeedEnVal').textContent=parseFloat(this.value).toFixed(1)+'词/秒'">
+                  <span class="sb3-val" id="sb3SpeedEnVal">2.3词/秒</span>
+                </div>
+              </div>
+              <button onclick="sb3ApplyDuration()" class="btn-secondary" style="margin-left:auto;padding:6px 14px;font-size:12px">重新分配时长</button>
+            </div>
+          </div>
+          <div id="sb3StatusBar" style="display:none;margin-bottom:10px">
+            <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:8px">
+              <span class="sb3-stats" id="sb3StatsEl">—</span>
+              <span class="sb3-status-pill" id="sb3Pill">✓ 在范围内</span>
+            </div>
+            <div class="sb3-timeline" id="sb3Timeline"></div>
+          </div>
+          <div id="sb3Toolbar" style="display:none" class="sb3-toolbar">
+            <button class="sb3-export" onclick="sb3CopyAll()">复制全部 Prompt</button>
+            <button class="sb3-export" onclick="sb3ExportCSV()">↓ CSV</button>
+            <button class="sb3-export" onclick="sb3ExportMD()">↓ Markdown</button>
+          </div>
+          <div id="sb3TableWrap" style="display:none;overflow-x:auto">
+            <table id="storyboardTable">
+              <colgroup>
+                <col style="width:28px"><col style="width:64px"><col style="width:15%">
+                <col style="width:20%"><col style="width:auto"><col style="width:62px"><col style="width:68px">
+              </colgroup>
+              <thead>
+                <tr>
+                  <th>#</th><th>时间戳</th><th>旁白摘要</th>
+                  <th>画面描述</th><th>AI Video Prompt（Kling / Veo）</th><th>时长</th><th>状态</th>
+                </tr>
+              </thead>
+              <tbody id="sb3Body"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
     </div>
   </div>
 
@@ -1827,6 +1966,13 @@ function resetGen(){
   renderRefFiles();
   resetBatch(1);resetBatch(2);
   document.getElementById('publishRow').style.display='none';
+  document.getElementById('batch3Section').style.display='none';
+  document.getElementById('sb3StatusBar').style.display='none';
+  document.getElementById('sb3Toolbar').style.display='none';
+  document.getElementById('sb3TableWrap').style.display='none';
+  document.getElementById('genBtn3').disabled=false;
+  document.getElementById('genBtn3').innerHTML='✦ 生成分镜表';
+  sb3Rows=[];
   outputFull='';
 }
 /* ═══════════════════════════════════════════
@@ -2068,6 +2214,7 @@ async function generateBatch1(){
     outputFull=buf1;
     document.getElementById('wordCount1').textContent='共'+buf1.length+'字';
     checkPublishRow();
+    revealBatch3();
   }catch(e){
     clearInterval(timer);
     document.getElementById('genLoading1').style.display='none';
@@ -2193,6 +2340,350 @@ function newContent(){
 /* ═══════════════════════════════════════════
    INIT
 ═══════════════════════════════════════════ */
+/* ═══════════════════════════════════════════
+   BATCH 3 — 分镜表生成
+═══════════════════════════════════════════ */
+var sb3Rows=[];
+var sb3Strategy='narration';
+var sb3MinMin=6, sb3MaxMin=12;
+
+var SB3_TYPE_COLORS={
+  hook:'#378ADD', data:'#1D9E75', mechanism:'#7F77DD',
+  tips:'#BA7517', caveat:'#D85A30', outro:'#888780', general:'#4a4a66'
+};
+var SB3_TYPE_WEIGHT={hook:1.5,mechanism:1.5,data:1.2,tips:1.0,caveat:1.0,outro:0.8,general:1.0};
+
+function sb3Fmt(sec){
+  var m=Math.floor(sec/60),s=String(sec%60).padStart(2,'0');
+  return m+':'+s;
+}
+function sb3FmtMin(min){return min+':00';}
+
+function sb3SliderChange(){
+  var mn=parseInt(document.getElementById('sb3MinSlider').value);
+  var mx=parseInt(document.getElementById('sb3MaxSlider').value);
+  if(mn>=mx){mx=mn+1;document.getElementById('sb3MaxSlider').value=mx;}
+  sb3MinMin=mn; sb3MaxMin=mx;
+  document.getElementById('sb3MinVal').textContent=sb3FmtMin(mn);
+  document.getElementById('sb3MaxVal').textContent=sb3FmtMin(mx);
+  if(sb3Rows.length>0)sb3UpdateStatus();
+}
+
+function sb3SetPreset(mn,mx,el){
+  document.getElementById('sb3MinSlider').value=mn;
+  document.getElementById('sb3MaxSlider').value=mx;
+  sb3MinMin=mn; sb3MaxMin=mx;
+  document.getElementById('sb3MinVal').textContent=sb3FmtMin(mn);
+  document.getElementById('sb3MaxVal').textContent=sb3FmtMin(mx);
+  document.querySelectorAll('.sb3-preset').forEach(function(b){b.classList.remove('active');});
+  if(el)el.classList.add('active');
+  if(sb3Rows.length>0)sb3UpdateStatus();
+}
+
+function sb3SetStrategy(s,el){
+  sb3Strategy=s;
+  document.querySelectorAll('.sb3-strat-btn').forEach(function(b){b.classList.remove('active');});
+  if(el)el.classList.add('active');
+}
+
+/* ── 从脚本文本解析 *[Visual: ...]* ── */
+function sb3ParseVisuals(scriptText){
+  var rows=[];
+  var lines=scriptText.split('\n');
+  var sceneIdx=0;
+  lines.forEach(function(line){
+    var m=line.match(/\*?\[Visual:\s*([^\]]+)\]\*?/i);
+    if(!m)return;
+    sceneIdx++;
+    var visText=m[1].trim();
+    // 检测场景类型
+    var type='general';
+    if(/hook|intro|open|start/i.test(visText)) type='hook';
+    else if(/mechanism|pathway|process|cascade|flow|molecular|cell/i.test(visText)) type='mechanism';
+    else if(/data|chart|graph|infographic|statistic|percent|bar|pie/i.test(visText)) type='data';
+    else if(/tip|action|recommend|advice|food|diet|lifestyle/i.test(visText)) type='tips';
+    else if(/caution|caveat|limitation|correlation|warn|disclaimer/i.test(visText)) type='caveat';
+    else if(/outro|end|subscribe|channel|conclusion/i.test(visText)) type='outro';
+    // 提取同行旁白文字（Visual标注之前的部分）
+    var narRaw=line.replace(/\*?\[Visual:[^\]]+\]\*?/gi,'').trim();
+    // 计算旁白字数（中文按字，英文按词）
+    var zhChars=(narRaw.match(/[\u4e00-\u9fa5]/g)||[]).length;
+    var enWords=narRaw.replace(/[\u4e00-\u9fa5]/g,'').trim().split(/\s+/).filter(function(w){return w.length>1;}).length;
+    var narCount=zhChars+enWords;
+    rows.push({
+      num:sceneIdx,
+      vis:visText,
+      nar:narRaw.slice(0,60)+(narRaw.length>60?'…':''),
+      narFull:narRaw,
+      narCount:narCount, // 旁白字/词数，用于时长计算
+      type:type,
+      dur:0,  // 待分配
+      baseDur:0,
+      prompt:'',
+      promptLoading:true,
+      status:'todo'
+    });
+  });
+  return rows;
+}
+
+/* ── 按旁白字数计算硬底时长（秒）── */
+function sb3CalcFloorDur(row){
+  var zhChars=(row.narFull.match(/[\u4e00-\u9fa5]/g)||[]).length;
+  var enWords=row.narFull.replace(/[\u4e00-\u9fa5]/g,'').trim().split(/\s+/).filter(function(w){return w.length>1;}).length;
+  var speedZh=parseFloat(document.getElementById('sb3SpeedZh').value)||4.0;
+  var speedEn=parseFloat(document.getElementById('sb3SpeedEn').value)||2.3;
+  var floorSec=0;
+  if(zhChars>0) floorSec=Math.ceil(zhChars/speedZh);
+  if(enWords>0) floorSec=Math.max(floorSec, Math.ceil(enWords/speedEn));
+  return Math.max(4, floorSec); // 最少4秒
+}
+
+/* ── 时长分配核心逻辑 ── */
+function sb3AllocateDurations(rows){
+  var targetSec=Math.round((sb3MinMin+sb3MaxMin)/2*60);
+  var n=rows.length;
+  if(n===0)return;
+
+  // 步骤1：计算每行硬底（旁白最少需要的时长）
+  var floors=rows.map(function(r){return sb3CalcFloorDur(r);});
+  var totalFloor=floors.reduce(function(a,b){return a+b;},0);
+
+  // 步骤2：限制目标不低于硬底总和
+  var effTarget=Math.max(targetSec, totalFloor+n*2); // 至少每场多2秒呼吸感
+
+  // 步骤3：计算余量
+  var surplus=effTarget-totalFloor;
+
+  // 步骤4：按策略分配余量
+  var weights=rows.map(function(r,i){
+    if(sb3Strategy==='equal') return 1;
+    if(sb3Strategy==='narration') return Math.max(1, r.narCount);
+    // type weighted
+    return SB3_TYPE_WEIGHT[r.type]||1.0;
+  });
+  var totalW=weights.reduce(function(a,b){return a+b;},0)||1;
+
+  var durs=rows.map(function(r,i){
+    var extra=Math.round(weights[i]/totalW*surplus);
+    return floors[i]+extra;
+  });
+
+  // 步骤5：修正误差（余量加减到最长镜头）
+  var diff=effTarget-durs.reduce(function(a,b){return a+b;},0);
+  var maxIdx=durs.indexOf(Math.max.apply(null,durs));
+  durs[maxIdx]=Math.max(4, durs[maxIdx]+diff);
+
+  rows.forEach(function(r,i){
+    r.baseDur=r.baseDur||r.dur||durs[i]; // 保留原始值用于对比显示
+    r.dur=durs[i];
+  });
+}
+
+function sb3ApplyDuration(){
+  if(sb3Rows.length===0)return;
+  sb3Rows.forEach(function(r){r.baseDur=r.baseDur||r.dur;}); // 记录旧值
+  sb3AllocateDurations(sb3Rows);
+  sb3RenderTable();
+  sb3UpdateStatus();
+  var btn=document.querySelector('button[onclick="sb3ApplyDuration()"]');
+  var orig=btn.textContent;
+  btn.textContent='✓ 已重新分配';
+  setTimeout(function(){btn.textContent=orig;},1200);
+}
+
+/* ── 主入口 ── */
+async function generateBatch3(){
+  var btn=document.getElementById('genBtn3');
+  btn.disabled=true; btn.textContent='解析中…';
+  var scriptText=document.getElementById('outputBox1').textContent||'';
+  if(scriptText.length<100){
+    alert('请先完成第一步（YouTube 脚本）生成。');
+    btn.disabled=false; btn.innerHTML='✦ 生成分镜表'; return;
+  }
+  sb3Rows=sb3ParseVisuals(scriptText);
+  if(sb3Rows.length===0){
+    alert('未在脚本中找到 *[Visual: ...]* 标注，请确认第一步已正常完成。');
+    btn.disabled=false; btn.innerHTML='✦ 生成分镜表'; return;
+  }
+  // 首次分配时长
+  sb3AllocateDurations(sb3Rows);
+  // 显示骨架
+  document.getElementById('sb3StatusBar').style.display='block';
+  document.getElementById('sb3Toolbar').style.display='flex';
+  document.getElementById('sb3TableWrap').style.display='block';
+  sb3RenderTableSkeleton();
+  sb3UpdateStatus();
+  btn.textContent='生成 Prompt 中…';
+  // 并发生成 prompt（每批3个）
+  var BATCH=3;
+  for(var i=0;i<sb3Rows.length;i+=BATCH){
+    await Promise.all(sb3Rows.slice(i,i+BATCH).map(function(row){return sb3GenPrompt(row);}));
+  }
+  btn.disabled=false;
+  btn.innerHTML='✓ 已完成 &nbsp;<span style="font-size:11px;opacity:.7">重新生成</span>';
+}
+
+async function sb3GenPrompt(row){
+  var sys='You are a professional video director for science documentary channels (Kurzgesagt / Explained style). Convert scene descriptions to AI video prompts for Kling 3.0 or Veo 3. Rules: English only, max 75 words, format: [subject/action], [camera movement], [visual style], [mood]. Style: medical-scientific animation, flat design, smooth motion. Avoid real people, text overlays. Always end with: "science documentary style, smooth animation".';
+  var msg='Scene: "'+row.vis+'"\nNarration context: "'+row.narFull.slice(0,100)+'"\nWrite the AI video generation prompt:';
+  try{
+    var out='';
+    await callClaudeStream(sys,msg,function(chunk){out+=chunk;});
+    row.prompt=out.trim();
+  }catch(e){
+    row.prompt='[Error] '+row.vis;
+  }
+  row.promptLoading=false;
+  sb3RenderRow(row);
+}
+
+/* ── 渲染 ── */
+function sb3RenderTableSkeleton(){
+  document.getElementById('sb3Body').innerHTML=sb3Rows.map(function(r){
+    return '<tr id="sb3-row-'+r.num+'">'
+      +'<td class="sb-num">'+r.num+'</td>'
+      +'<td class="sb-time">—</td>'
+      +'<td class="sb-nar">'+sb3Esc(r.nar)+'</td>'
+      +'<td class="sb-vis">'+sb3Esc(r.vis.slice(0,80))+(r.vis.length>80?'…':'')+'</td>'
+      +'<td><span class="sb-prompt loading" id="sb3-prompt-'+r.num+'">⏳ 生成中…</span></td>'
+      +'<td class="sb-dur-cell" id="sb3-dur-'+r.num+'">'+r.dur+'s</td>'
+      +'<td id="sb3-status-'+r.num+'">'+sb3Badge(r.num,r.status)+'</td>'
+      +'</tr>';
+  }).join('');
+  sb3RefreshTimestamps();
+}
+
+function sb3RenderTable(){
+  sb3RefreshTimestamps();
+  sb3Rows.forEach(function(r){
+    var durEl=document.getElementById('sb3-dur-'+r.num);
+    if(durEl){
+      var changed=r.baseDur&&r.baseDur!==r.dur;
+      durEl.innerHTML='<span class="sb-dur-new">'+r.dur+'s</span>'
+        +(changed?'<span class="sb-dur-old">'+r.baseDur+'s</span>':'');
+    }
+  });
+}
+
+function sb3RenderRow(row){
+  var el=document.getElementById('sb3-prompt-'+row.num);
+  if(el){
+    el.className='sb-prompt';
+    el.innerHTML=sb3Esc(row.prompt)
+      +'<br><button class="sb-copy-prompt" onclick="sb3CopyOne('+row.num+')">复制</button>';
+  }
+}
+
+function sb3RefreshTimestamps(){
+  var cum=0;
+  sb3Rows.forEach(function(r){
+    var start=cum; cum+=r.dur;
+    var tsEl=document.querySelector('#sb3-row-'+r.num+' .sb-time');
+    if(tsEl) tsEl.textContent=sb3Fmt(start)+'–'+sb3Fmt(cum);
+  });
+}
+
+function sb3Badge(num,status){
+  var labels={todo:'待生成',wip:'进行中',done:'已完成'};
+  var cls={todo:'sb3-todo',wip:'sb3-wip',done:'sb3-done'};
+  return '<span class="sb3-status-badge '+cls[status]+'" onclick="sb3CycleStatus('+num+')">'
+    +labels[status]+'</span>';
+}
+
+function sb3CycleStatus(num){
+  var r=sb3Rows.find(function(x){return x.num===num;});
+  if(!r)return;
+  var cycle={todo:'wip',wip:'done',done:'todo'};
+  r.status=cycle[r.status];
+  var el=document.getElementById('sb3-status-'+num);
+  if(el) el.innerHTML=sb3Badge(num,r.status);
+  sb3UpdateStatus();
+}
+
+function sb3UpdateStatus(){
+  var tot=sb3Rows.reduce(function(s,r){return s+r.dur;},0);
+  var totMin=tot/60;
+  var done=sb3Rows.filter(function(r){return r.status==='done';}).length;
+  var wip=sb3Rows.filter(function(r){return r.status==='wip';}).length;
+  var statsEl=document.getElementById('sb3StatsEl');
+  if(statsEl) statsEl.textContent='共'+sb3Rows.length+'个镜头 · '+sb3Fmt(tot)+' · 完成'+done+'/进行中'+wip;
+  var pill=document.getElementById('sb3Pill');
+  if(pill){
+    if(totMin<sb3MinMin){pill.className='sb3-status-pill sb3-pill-low';pill.textContent='⚠ 低于最短时长';}
+    else if(totMin>sb3MaxMin){pill.className='sb3-status-pill sb3-pill-over';pill.textContent='✕ 超出最长时长';}
+    else{pill.className='sb3-status-pill sb3-pill-ok';pill.textContent='✓ 在范围内';}
+  }
+  // 时间轴
+  var tl=document.getElementById('sb3Timeline');
+  if(tl&&tot>0){
+    tl.innerHTML=sb3Rows.map(function(r){
+      var pct=(r.dur/tot*100).toFixed(1);
+      var col=SB3_TYPE_COLORS[r.type]||'#4a4a66';
+      return '<div class="sb3-tl-seg" style="flex:'+pct+';background:'+col+'" title="'+r.nar.slice(0,20)+'… '+r.dur+'s">'
+        +'<span>'+r.dur+'s</span></div>';
+    }).join('');
+  }
+}
+
+/* ── 导出 / 复制 ── */
+function sb3CopyOne(num){
+  var r=sb3Rows.find(function(x){return x.num===num;});
+  if(!r||!r.prompt)return;
+  navigator.clipboard.writeText(r.prompt).then(function(){
+    var btn=document.querySelector('#sb3-row-'+num+' .sb-copy-prompt');
+    if(btn){btn.textContent='✓ 已复制';setTimeout(function(){btn.textContent='复制';},1400);}
+  }).catch(function(){});
+}
+
+function sb3CopyAll(){
+  var text=sb3Rows.filter(function(r){return r.prompt;})
+    .map(function(r){return '['+r.num+'] '+sb3Fmt(sb3Rows.slice(0,r.num-1).reduce(function(s,x){return s+x.dur;},0))+'  画面：'+r.vis+'  Prompt：'+r.prompt;})
+    .join('\n\n');
+  navigator.clipboard.writeText(text).then(function(){showToast('✓ 已复制全部 Prompt（'+sb3Rows.length+'条）');}).catch(function(){});
+}
+
+function sb3ExportCSV(){
+  var header='#,时间戳,旁白摘要,画面描述,AI Video Prompt,时长(s),状态';
+  var cum=0;
+  var rows=sb3Rows.map(function(r){
+    var start=cum; cum+=r.dur;
+    return [r.num,sb3Fmt(start)+'–'+sb3Fmt(cum),r.nar,r.vis,r.prompt,r.dur,r.status]
+      .map(function(v){return '"'+String(v).replace(/"/g,'""')+'"';}).join(',');
+  });
+  sb3Download('storyboard.csv',[header].concat(rows).join('\n'),'text/csv');
+}
+
+function sb3ExportMD(){
+  var topic=(selectedTopic&&selectedTopic.title)||'视频';
+  var cum=0;
+  var lines=['# 分镜表 — '+topic,'','| # | 时间戳 | 旁白摘要 | 画面描述 | AI Video Prompt | 时长 | 状态 |','|---|--------|---------|---------|----------------|------|------|'];
+  sb3Rows.forEach(function(r){
+    var start=cum; cum+=r.dur;
+    lines.push('| '+r.num+' | '+sb3Fmt(start)+'–'+sb3Fmt(cum)+' | '+r.nar+' | '+r.vis+' | '+(r.prompt||'⏳')+' | '+r.dur+'s | '+r.status+' |');
+  });
+  lines.push('','> 生成时间：'+new Date().toLocaleString('zh-CN')+'  共'+sb3Rows.length+'个镜头');
+  sb3Download('storyboard.md',lines.join('\n'),'text/markdown');
+}
+
+function sb3Download(filename,content,mime){
+  var blob=new Blob(['\uFEFF'+content],{type:mime+';charset=utf-8'});
+  var url=URL.createObjectURL(blob);
+  var a=document.createElement('a');
+  a.href=url; a.download=filename;
+  document.body.appendChild(a); a.click();
+  document.body.removeChild(a); URL.revokeObjectURL(url);
+}
+
+function sb3Esc(s){
+  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+function revealBatch3(){
+  var sec=document.getElementById('batch3Section');
+  if(sec) sec.style.display='block';
+}
+
 initTags();buildChecklist();updateKeyStatus();
 
 </script>
