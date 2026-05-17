@@ -394,13 +394,8 @@ body {
   .discover-hero { padding-top: 24px; }
   .hero-title { font-size: 26px; }
   body { padding-bottom: 64px; }
-  #parallelLanes { grid-template-columns: 1fr !important; }
 }
 @media(min-width: 701px) { .mob-nav { display: none !important; } }
-
-/* ── 并行两条线布局 ──────────────────────────────────────── */
-.lane-col { background:var(--surface); border:1px solid var(--border); border-radius:14px; padding:14px 14px 16px; }
-.lane-col .gen-card { margin-bottom:0; }
 
 /* ── BATCH 3: 分镜表 ─────────────────────────────────────── */
 #batch3Section { margin-top:20px; padding-top:20px; border-top:1px solid var(--border); display:none; }
@@ -524,6 +519,9 @@ body {
   <button class="nav-item" onclick="nav('favorites')" id="nav-favorites">
     <span class="nav-icon">⭐</span> 收藏夹
   </button>
+  <button class="nav-item" onclick="nav('history')" id="nav-history">
+    <span class="nav-icon">📋</span> 历史选题
+  </button>
   <div class="sidebar-footer">
     <span id="keyStatus" style="color:var(--red)">⚠ 未设置API Key</span><br>
     <button onclick="showKeyModal()" style="margin-top:6px;padding:4px 10px;background:var(--surface2);border:1px solid var(--border2);border-radius:6px;color:var(--text2);font-size:11px;cursor:pointer;width:100%">设置 API Key</button>
@@ -534,6 +532,7 @@ body {
   <button class="mob-btn active" onclick="nav('discover')" id="mob-discover"><span class="mob-icon">🔍</span>选题</button>
   <button class="mob-btn" onclick="nav('produce')" id="mob-produce"><span class="mob-icon">✦</span>生产</button>
   <button class="mob-btn" onclick="nav('favorites')" id="mob-favorites"><span class="mob-icon">⭐</span>收藏</button>
+  <button class="mob-btn" onclick="nav('history')" id="mob-history"><span class="mob-icon">📋</span>历史</button>
 </div>
 
 <div class="main">
@@ -607,6 +606,23 @@ body {
       <div id="favList"></div>
     </div>
   </div>
+
+  <!-- HISTORY -->
+  <div class="panel" id="panel-history">
+    <div class="produce-wrap">
+      <div class="panel-title">📋 历史选题</div>
+      <div class="panel-sub">已进入生产的选题记录，防止重复做题材</div>
+      <div style="display:flex;justify-content:flex-end;margin-bottom:12px">
+        <button onclick="clearHistory()" style="padding:6px 12px;background:var(--surface2);color:var(--red);border:1px solid var(--red)33;border-radius:6px;font-size:11px;cursor:pointer">清空历史</button>
+      </div>
+      <div id="histEmpty" style="margin-top:40px;text-align:center;color:var(--text3)">
+        <div style="font-size:36px;margin-bottom:12px">📋</div>
+        <div style="font-size:14px">还没有历史记录</div>
+        <div style="font-size:12px;margin-top:6px">选择题材并进入生产后自动记录</div>
+      </div>
+      <div id="histList"></div>
+    </div>
+  </div>
   <div class="panel" id="panel-produce">
     <div class="empty-state" id="no-topic">
       <div class="empty-icon">👆</div>
@@ -651,118 +667,70 @@ body {
         <div class="ref-files" id="refFileList"></div>
       </div>
 
-      <!-- 并行两条线容器 -->
-      <div id="parallelLanes" style="display:grid;grid-template-columns:1fr 1fr;gap:14px;align-items:start">
-
-        <!-- ════ 左线：长视频线 ════ -->
-        <div class="lane-col" id="laneLeft">
-          <div class="lane-header" style="display:flex;align-items:center;gap:8px;margin-bottom:10px">
-            <span style="font-size:16px">📹</span>
-            <div>
-              <div style="font-size:13px;font-weight:700;color:var(--text1)">长视频线</div>
-              <div style="font-size:11px;color:var(--text3);font-family:'DM Mono',monospace">YouTube · 双语脚本</div>
-            </div>
+      <!-- BATCH 1: YouTube scripts -->
+      <div id="genArea1">
+        <div class="gen-card">
+          <span class="gen-lbl">第一步</span>
+          <div class="gen-tags">
+            <span class="badge" style="border-color:#7c6cfc40;color:var(--accent)">YouTube 中文 8-10min</span>
+            <span class="badge" style="border-color:#4fd1c540;color:var(--teal)">YouTube English 8-10min</span>
           </div>
-
-          <!-- BATCH 1: YouTube scripts -->
-          <div id="genArea1">
-            <div class="gen-card">
-              <span class="gen-lbl">第一步</span>
-              <div class="gen-tags">
-                <span class="badge" style="border-color:#7c6cfc40;color:var(--accent)">中文 8-20min</span>
-                <span class="badge" style="border-color:#4fd1c540;color:var(--teal)">English 8-20min</span>
-              </div>
-              <!-- 分步进度提示（专题模式才显示） -->
-              <div id="segmentedHint" style="display:none;font-size:11px;color:var(--text3);margin-bottom:8px;font-family:'DM Mono',monospace">
-                ✦ 分步生成：中文 → 英文 → 合并
-              </div>
-              <button class="btn-primary full" id="genBtn1" onclick="generateBatch1()">✦ 生成 YouTube 脚本</button>
-            </div>
-          </div>
-          <div id="genLoading1" style="display:none">
-            <div class="gen-indicator">
-              <div class="gen-icon-wrap"><div class="gen-ring"></div><div class="gen-ring-2"></div><div class="gen-core"></div></div>
-              <div class="gen-text-col">
-                <div class="gen-status-line" id="genStatusLine1">正在生成 YouTube 脚本</div>
-                <div class="gen-sub-line" id="genSubLine1">构建脚本结构...</div>
-              </div>
-              <button onclick="stopBatch(1)" style="margin-left:auto;padding:6px 14px;border-radius:7px;background:transparent;border:1px solid var(--red);color:var(--red);font-size:12px;cursor:pointer;flex-shrink:0">■ 停止</button>
-            </div>
-            <!-- 分步进度条（专题模式显示） -->
-            <div id="segmentProgress" style="display:none;margin-top:8px;padding:0 4px">
-              <div style="display:flex;gap:4px;align-items:center;font-size:11px;color:var(--text3)">
-                <span id="segStep1" style="padding:3px 8px;border-radius:4px;background:var(--surface);border:1px solid var(--border)">① 中文脚本</span>
-                <span style="color:var(--text3)">→</span>
-                <span id="segStep2" style="padding:3px 8px;border-radius:4px;background:var(--surface);border:1px solid var(--border)">② 英文脚本</span>
-                <span style="color:var(--text3)">→</span>
-                <span id="segStep3" style="padding:3px 8px;border-radius:4px;background:var(--surface);border:1px solid var(--border)">③ 合并输出</span>
-              </div>
-            </div>
-          </div>
-          <div id="outputArea1" style="display:none">
-            <div class="out-hdr">
-              <span style="font-size:12px;color:var(--text2)" id="wordCount1"></span>
-              <button class="copy-btn" id="copyBtn1" onclick="copyOutput(1)">复制</button>
-            </div>
-            <div class="output-box" id="outputBox1"></div>
-            <div style="margin-top:8px;display:flex;justify-content:flex-end">
-              <button class="btn-secondary" style="font-size:12px;padding:7px 14px" onclick="resetBatch(1)">重新生成</button>
-            </div>
-          </div>
+          <button class="btn-primary full" id="genBtn1" onclick="generateBatch1()">✦ 生成 YouTube 脚本</button>
         </div>
-
-        <!-- ════ 右线：短视频线 ════ -->
-        <div class="lane-col" id="laneRight">
-          <div class="lane-header" style="display:flex;align-items:center;gap:8px;margin-bottom:10px">
-            <span style="font-size:16px">📱</span>
-            <div>
-              <div style="font-size:13px;font-weight:700;color:var(--text1)">短视频线</div>
-              <div style="font-size:11px;color:var(--text3);font-family:'DM Mono',monospace">TikTok / Shorts · 60s</div>
-            </div>
+      </div>
+      <div id="genLoading1" style="display:none">
+        <div class="gen-indicator">
+          <div class="gen-icon-wrap"><div class="gen-ring"></div><div class="gen-ring-2"></div><div class="gen-core"></div></div>
+          <div class="gen-text-col">
+            <div class="gen-status-line">正在生成 YouTube 脚本</div>
+            <div class="gen-sub-line" id="genSubLine1">构建脚本结构...</div>
           </div>
-
-          <!-- BATCH 2: TikTok + images -->
-          <div id="genArea2">
-            <div class="gen-card">
-              <span class="gen-lbl">第一步</span>
-              <div class="gen-tags">
-                <span class="badge" style="border-color:#7c6cfc40;color:var(--accent)">TikTok 中文 60s</span>
-                <span class="badge" style="border-color:#4fd1c540;color:var(--teal)">TikTok English 60s</span>
-                <span class="badge b-safe">配图提示词 ×3</span>
-              </div>
-              <button class="btn-primary full" id="genBtn2" onclick="generateBatch2()">✦ 生成 TikTok + 配图</button>
-            </div>
-          </div>
-          <div id="genLoading2" style="display:none">
-            <div class="gen-indicator">
-              <div class="gen-icon-wrap"><div class="gen-ring"></div><div class="gen-ring-2"></div><div class="gen-core"></div></div>
-              <div class="gen-text-col">
-                <div class="gen-status-line">正在生成 TikTok 脚本</div>
-                <div class="gen-sub-line" id="genSubLine2">提炼核心钩子...</div>
-              </div>
-              <button onclick="stopBatch(2)" style="margin-left:auto;padding:6px 14px;border-radius:7px;background:transparent;border:1px solid var(--red);color:var(--red);font-size:12px;cursor:pointer;flex-shrink:0">■ 停止</button>
-            </div>
-          </div>
-          <div id="outputArea2" style="display:none">
-            <div class="out-hdr">
-              <span style="font-size:12px;color:var(--text2)" id="wordCount2"></span>
-              <button class="copy-btn" id="copyBtn2" onclick="copyOutput(2)">复制</button>
-            </div>
-            <div class="output-box" id="outputBox2"></div>
-            <div style="margin-top:8px;display:flex;justify-content:flex-end">
-              <button class="btn-secondary" style="font-size:12px;padding:7px 14px" onclick="resetBatch(2)">重新生成</button>
-            </div>
-          </div>
-
-          <!-- 两线都独立，短视频线也有自己的配图+分镜入口 -->
-          <div id="shortBatch3Hint" style="display:none;margin-top:10px">
-            <div style="font-size:11px;color:var(--text3);font-family:'DM Mono',monospace;padding:8px;border:1px dashed var(--border);border-radius:8px;text-align:center">
-              ↑ 生成TikTok脚本后，长视频线的分镜表也会解锁
-            </div>
-          </div>
+          <button onclick="stopBatch(1)" style="margin-left:auto;padding:6px 14px;border-radius:7px;background:transparent;border:1px solid var(--red);color:var(--red);font-size:12px;cursor:pointer;flex-shrink:0">■ 停止</button>
         </div>
+      </div>
+      <div id="outputArea1" style="display:none">
+        <div class="out-hdr">
+          <span style="font-size:12px;color:var(--text2)" id="wordCount1"></span>
+          <button class="copy-btn" id="copyBtn1" onclick="copyOutput(1)">复制</button>
+        </div>
+        <div class="output-box" id="outputBox1"></div>
+        <div style="margin-top:8px;display:flex;justify-content:flex-end">
+          <button class="btn-secondary" style="font-size:12px;padding:7px 14px" onclick="resetBatch(1)">重新生成</button>
+        </div>
+      </div>
 
-      </div><!-- /parallelLanes -->
+      <!-- BATCH 2: TikTok + images -->
+      <div id="genArea2" style="margin-top:12px">
+        <div class="gen-card">
+          <span class="gen-lbl">第二步</span>
+          <div class="gen-tags">
+            <span class="badge" style="border-color:#7c6cfc40;color:var(--accent)">TikTok 中文 60s</span>
+            <span class="badge" style="border-color:#4fd1c540;color:var(--teal)">TikTok English 60s</span>
+            <span class="badge b-safe">配图提示词 ×3</span>
+          </div>
+          <button class="btn-primary full" id="genBtn2" onclick="generateBatch2()">✦ 生成 TikTok + 配图</button>
+        </div>
+      </div>
+      <div id="genLoading2" style="display:none;margin-top:12px">
+        <div class="gen-indicator">
+          <div class="gen-icon-wrap"><div class="gen-ring"></div><div class="gen-ring-2"></div><div class="gen-core"></div></div>
+          <div class="gen-text-col">
+            <div class="gen-status-line">正在生成 TikTok 脚本</div>
+            <div class="gen-sub-line" id="genSubLine2">提炼核心钩子...</div>
+          </div>
+          <button onclick="stopBatch(2)" style="margin-left:auto;padding:6px 14px;border-radius:7px;background:transparent;border:1px solid var(--red);color:var(--red);font-size:12px;cursor:pointer;flex-shrink:0">■ 停止</button>
+        </div>
+      </div>
+      <div id="outputArea2" style="display:none;margin-top:12px">
+        <div class="out-hdr">
+          <span style="font-size:12px;color:var(--text2)" id="wordCount2"></span>
+          <button class="copy-btn" id="copyBtn2" onclick="copyOutput(2)">复制</button>
+        </div>
+        <div class="output-box" id="outputBox2"></div>
+        <div style="margin-top:8px;display:flex;justify-content:flex-end">
+          <button class="btn-secondary" style="font-size:12px;padding:7px 14px" onclick="resetBatch(2)">重新生成</button>
+        </div>
+      </div>
 
       <div id="publishRow" style="display:none;margin-top:16px">
         <button class="btn-secondary full" onclick="toggleInlineChecklist()" style="justify-content:center;gap:8px" id="checklistToggleBtn">
@@ -1060,6 +1028,7 @@ function nav(p){
   if(p==='produce')updateProduce();
   if(p==='publish')buildChecklist();
   if(p==='favorites')renderFavorites();
+  if(p==='history')renderHistory();
   window.scrollTo(0,0);
 }
 var _searchStopped=false;
@@ -1129,13 +1098,11 @@ async function advanceCrawlWindow(s,success){
   return s;
 }
 function winLabel(s){
-  var cy=new Date().getFullYear();
-  var py=cy-1;
-  if(s.winStart===0)return 'very recent '+py+'-'+cy+' publications';
-  if(s.winStart<=14)return 'recent '+py+'-'+cy+' publications';
-  if(s.winStart<=30)return cy+' publications';
-  if(s.winStart<=60)return py+'-'+cy+' publications';
-  return (cy-2)+' publications';
+  if(s.winStart===0)return 'very recent 2025-2026 publications';
+  if(s.winStart<=14)return 'recent 2025-2026 publications';
+  if(s.winStart<=30)return '2025 publications';
+  if(s.winStart<=60)return '2024-2025 publications';
+  return '2023 publications';
 }
 
 /* ═══════════════════════════════════════════
@@ -1663,10 +1630,7 @@ async function doSearch(){
     }else{
       setMsg('搜索论文: '+q,'');
       try{
-        var mp=await fetchPapersViaClaude(
-          [q+' humans health surprising counterintuitive findings'],
-          'recent 2023-2025 publications'
-        );
+        var mp=await fetchPapersViaClaudeStrict(q);
         dbg('manual fetch got '+mp.length+' papers');
         if(mp.length>0){
           await addPapers(mp);
@@ -1708,6 +1672,16 @@ async function doSearch(){
       setMsg('AI评分第'+batchNum+'轮...','已有'+allTopics.length+'篇，目标60篇');
       var r=await scoreNextBatch(batch);
       var parsed=parseTopics(r.text,r.papers);
+      // 手动搜索时：只保留标题或摘要含搜索词的条目
+      if(isManual && q.length>0){
+        var qLower=q.toLowerCase().split(/\s+/).filter(function(w){return w.length>3;});
+        if(qLower.length>0){
+          parsed=parsed.filter(function(t){
+            var hay=(t.title+' '+(t.english_title||'')+' '+(t.hook||'')+' '+(t.paper||'')).toLowerCase();
+            return qLower.some(function(w){return hay.indexOf(w)>=0;});
+          });
+        }
+      }
       dbg('batch'+batchNum+' parsed='+parsed.length);
       allTopics=allTopics.concat(parsed);
 
@@ -1759,15 +1733,16 @@ async function forceRefetch(){
   doSearch();
 }
 
-/* ── AI SCORING ── */
+/* ── AI SCORING (内部分组，每组≤15篇，防止单次过载) ── */
 async function scoreNextBatch(papers){
+  var GROUP_SIZE=15;
+  var allText='';
+  var allPapers=[];
   var sep='\n---\n';
-  var paperList=papers.map(function(p,i){
-    return '['+String(i+1)+'] TITLE: '+p.title+' | JOURNAL: '+p.journal+' '+p.year+' | ABSTRACT: '+p.abstract;
-  }).join(sep);
 
   var sys='You are a celebrated science writer — think Carl Sagan meets Malcolm Gladwell. You have spent 20 years turning dense academic papers into must-watch content for general audiences. You understand what makes a non-scientist gasp, lean forward, or immediately text a friend. Your superpower is finding the single most jaw-dropping implication buried in a methods section or a result table, then phrasing it as a vivid, specific, concrete headline that a curious 35-year-old would click at 11pm. You NEVER write vague academic summaries. You write headlines that feel like discoveries. Output ONLY lines starting with TOPIC|. Zero other text.';
-  var prompt='Evaluate these papers for YouTube/TikTok health science impact. Output ALL papers regardless of score.\n\n'
+
+  var basePrompt='Evaluate these papers for YouTube/TikTok health science impact. Output ALL papers regardless of score.\n\n'
     +'7-DIMENSION SCORING (total 100 points):\n\n'
     +'1. PersonalStakes(20): Rate by affected population SIZE x personal pain intensity.\n'
     +'   Cancer/diabetes/Alzheimer/heart disease patients+families globally: 16-20\n'
@@ -1817,15 +1792,33 @@ async function scoreNextBatch(papers){
     +'     "睡6小时者大脑老化快8年" "这种常见食物每周一次降癌风险37%"\n'
     +'BAD:  "微塑料危害研究" "睡眠与健康关系" "癌症新发现" "肠道菌群综述"\n\n'
     +'Output format - one line per paper (ALL papers):\n'
-    +'TOPIC|Chinese headline max 24 chars|English title|triggers|Journal Year|TotalScore|PersonalStakes|HopeAction|Extremity|Urgency|VividNumbers|EvidenceQuality|TopicRarity|CategoryKeyword|safe or warn|PaperNumber\n\n'
-    +'PAPERS:\n'+paperList;
+    +'TOPIC|Chinese headline max 24 chars|English title|triggers|Journal Year|TotalScore|PersonalStakes|HopeAction|Extremity|Urgency|VividNumbers|EvidenceQuality|TopicRarity|CategoryKeyword|safe or warn|PaperNumber\n\n';
 
-  try{
-    var text=await callClaude(sys,prompt,3000);
-    dbg('scoreNextBatch raw (300): '+text.slice(0,300));
-  }catch(e){dbg('score err: '+e.message);var text='';}
+  // 分组处理，每组最多GROUP_SIZE篇
+  for(var gi=0; gi<papers.length; gi+=GROUP_SIZE){
+    if(_searchStopped) break;
+    var group=papers.slice(gi,gi+GROUP_SIZE);
+    // PaperNumber在每组内从1开始，parseTopics时需要偏移
+    var paperList=group.map(function(p,i){
+      return '['+String(i+1)+'] TITLE: '+p.title+' | JOURNAL: '+p.journal+' '+p.year+' | ABSTRACT: '+p.abstract;
+    }).join(sep);
+
+    try{
+      var text=await callClaude(sys,basePrompt+'PAPERS:\n'+paperList,3000);
+      dbg('scoreGroup '+(gi/GROUP_SIZE+1)+' raw (150): '+text.slice(0,150));
+      // 把PaperNumber偏移补回正确索引
+      var offsetText=text.replace(/\|(\d+)\s*$/gm,function(m,n){
+        return '|'+(parseInt(n)+gi);
+      });
+      allText+='\n'+offsetText;
+      allPapers=allPapers.concat(group);
+    }catch(e){
+      dbg('scoreGroup err: '+e.message);
+      allPapers=allPapers.concat(group);
+    }
+  }
   await markScored(papers);
-  return{text:text||'',papers:papers};
+  return{text:allText,papers:allPapers};
 }
 
 /* ── PARSE TOPICS ── */
@@ -1849,8 +1842,8 @@ function parseTopics(text,papers){
     if(total<1)return;
     var catKey=(p[13]||'').trim();
     var sl=(p[14]||'safe').trim().toLowerCase();
-    var pidx=parseInt(p[15])-1;
-    var src=(papers&&papers[pidx])?papers[pidx]:null;
+    var pidx=parseInt(p[15])-1; // 已在scoreNextBatch中做过偏移
+    var src=(papers&&papers[pidx]&&pidx>=0)?papers[pidx]:null;
     topics.push({
       title:p[1]||'',
       english_title:p[2]||'',
@@ -1874,6 +1867,120 @@ function showErr(msg){
     +'<div style="color:var(--amber);font-size:14px;margin-bottom:10px">提示</div>'
     +'<div style="color:var(--text2);font-size:13px;line-height:1.8">'+msg+'</div></div>';
 }
+
+/* ── 严格主题搜索（手动搜索专用）── */
+async function fetchPapersViaClaudeStrict(query){
+  var cy=new Date().getFullYear();
+  var sys='You are a biomedical literature expert. Output ONLY lines that start with PAPER|. No other text.';
+  var prompt='List 15 real peer-reviewed papers SPECIFICALLY about: "'+query+'"\n'
+    +'STRICT RULE: Every paper MUST directly relate to "'+query+'". Do NOT include papers on other topics.\n'
+    +'Focus: recent '+(cy-2)+'-'+cy+' publications with surprising or impactful findings.\n\n'
+    +'Output format - one line per paper, pipe-separated:\n'
+    +'PAPER|Full title|Journal|Year|PMID or 0|One sentence summary\n\n'
+    +'Now list 15 papers ONLY about "'+query+'":';
+  var key=getApiKey();
+  if(!key){showKeyModal();throw new Error('请先设置API Key');}
+  var proxy=getProxyUrl();
+  var fetchOpts;
+  if(proxy){
+    fetchOpts={method:'POST',headers:{'Content-Type':'application/json','x-api-key':key,'x-base-url':getApiBase()},
+      body:JSON.stringify({model:getApiModel(),max_tokens:2500,messages:[{role:'system',content:sys},{role:'user',content:prompt}]})};
+  }else{
+    fetchOpts={method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+key},
+      body:JSON.stringify({model:getApiModel(),max_tokens:2500,messages:[{role:'system',content:sys},{role:'user',content:prompt}]})};
+  }
+  var res=await fetch(proxy||(getApiBase().replace(/\/+$/,'')+'/chat/completions'),fetchOpts);
+  var data=await res.json();
+  var text='';
+  if(data.choices&&data.choices[0]&&data.choices[0].message)text=data.choices[0].message.content||'';
+  else if(data.content&&data.content[0]&&data.content[0].text)text=data.content[0].text;
+  if(data.error)throw new Error(data.error.message||JSON.stringify(data.error));
+  dbg('fetchStrict raw: '+text.slice(0,200));
+  return parsePaperLines(text);
+}
+
+/* ═══════════════════════════════════════════
+   HISTORY 历史选题记录
+═══════════════════════════════════════════ */
+var SK_HISTORY='paperstill_history';
+
+async function getHistory(){
+  var raw=await stGet(SK_HISTORY);
+  return raw?JSON.parse(raw):[];
+}
+
+async function addHistory(topic){
+  if(!topic||!topic.title)return;
+  var hist=await getHistory();
+  // 去重：已存在的不重复添加
+  if(hist.find(function(h){return h.title===topic.title;})){return;}
+  var entry={
+    title:topic.title,
+    english_title:topic.english_title||'',
+    paper:topic.paper||'',
+    total:topic.total||0,
+    _doneDate:new Date().toISOString().slice(0,10),
+    _doneTime:new Date().toLocaleTimeString('zh-CN',{hour:'2-digit',minute:'2-digit'})
+  };
+  hist.unshift(entry);
+  if(hist.length>200)hist=hist.slice(0,200); // 最多保留200条
+  await stSet(SK_HISTORY,JSON.stringify(hist));
+}
+
+async function clearHistory(){
+  if(!confirm('确定清空所有历史选题记录？'))return;
+  await stSet(SK_HISTORY,JSON.stringify([]));
+  renderHistory();
+  showToast('历史已清空');
+}
+
+async function getHistoryTitles(){
+  var hist=await getHistory();
+  var set={};
+  hist.forEach(function(h){set[h.title]=h._doneDate;});
+  return set;
+}
+
+async function renderHistory(){
+  var hist=await getHistory();
+  var empty=document.getElementById('histEmpty');
+  var list=document.getElementById('histList');
+  if(!list)return;
+  if(hist.length===0){empty.style.display='block';list.innerHTML='';return;}
+  empty.style.display='none';
+  // 按月分组
+  var byMonth={};
+  hist.forEach(function(h){
+    var m=h._doneDate?h._doneDate.slice(0,7):'未知';
+    if(!byMonth[m])byMonth[m]=[];
+    byMonth[m].push(h);
+  });
+  var months=Object.keys(byMonth).sort().reverse();
+  list.innerHTML=months.map(function(m){
+    var label=m.replace('-','年')+'月';
+    var items=byMonth[m].map(function(h){
+      var scoreColor=h.total>=80?'var(--green)':h.total>=65?'var(--amber)':'var(--text2)';
+      return '<div style="display:flex;align-items:center;gap:8px;padding:8px 0;border-bottom:1px solid var(--border)">'
+        +'<div style="min-width:36px;text-align:center">'
+          +'<div style="font-size:10px;color:var(--text3);font-family:DM Mono,monospace">'+h._doneTime+'</div>'
+          +'<div style="font-size:9px;color:var(--text3)">'+h._doneDate+'</div>'
+        +'</div>'
+        +'<div style="flex:1;min-width:0">'
+          +'<div style="font-size:13px;font-weight:600;color:var(--text1);line-height:1.3">'+h.title+'</div>'
+          +'<div style="font-size:10px;color:var(--text3);margin-top:2px">'+h.paper+'</div>'
+        +'</div>'
+        +'<span style="font-size:11px;font-weight:800;color:'+scoreColor+';font-family:DM Mono,monospace;flex-shrink:0">'+h.total+'</span>'
+        +'<span style="font-size:10px;color:var(--green);background:#4ade8022;border:1px solid #4ade8044;padding:2px 6px;border-radius:4px;flex-shrink:0">✓ 已做</span>'
+        +'</div>';
+    }).join('');
+    return '<div style="margin-bottom:18px">'
+      +'<div style="font-size:11px;font-weight:700;color:var(--text2);font-family:DM Mono,monospace;letter-spacing:0.08em;margin-bottom:6px;padding-bottom:4px;border-bottom:1px solid var(--border)">'+label+' · '+byMonth[m].length+'条</div>'
+      +items+'</div>';
+  }).join('');
+}
+
+// nav函数中加载历史
+
 
 /* ═══════════════════════════════════════════
    RENDER TOPICS
@@ -1933,11 +2040,12 @@ function renderTopics(topics,stats){
       +'</div>'
       +'</div>';
     return '<div style="border-bottom:1px solid var(--border)">'
-      +'<div class="trow" style="display:flex;align-items:center;padding:7px 10px;cursor:pointer;gap:6px" onclick="toggleDetail('+i+',event)">'
+      +'<div class="trow" data-tidx="'+i+'" style="display:flex;align-items:center;padding:7px 10px;cursor:pointer;gap:6px" onclick="toggleDetail('+i+',event)">'
       +'<div id="chk-'+i+'" class="topic-checkbox'+(window._specialSelected&&window._specialSelected[i]?' checked':'')+'" onclick="event.stopPropagation();toggleSpecialSelect('+i+')" title="加入专题"></div>'
       +'<span style="font-size:10px;color:var(--text3);min-width:18px;text-align:right;flex-shrink:0;font-family:DM Mono,monospace">'+(i+1)+'</span>'
       +pm+warnIcon
-      +'<span style="font-size:13px;font-weight:600;flex:1;line-height:1.3">'+t.title+'</span>'
+      +'<span class="topic-title-text" style="font-size:13px;font-weight:600;flex:1;line-height:1.3">'+t.title+'</span>'
+      +'<span id="done-tag-'+i+'" style="display:none;font-size:9px;color:var(--green);background:#4ade8018;border:1px solid #4ade8033;padding:1px 5px;border-radius:4px;flex-shrink:0;white-space:nowrap">✓ 已做</span>'
       +'<span style="font-size:12px;font-weight:800;color:'+scoreColor+';flex-shrink:0;font-family:DM Mono,monospace">'+t.total+'</span>'
       +'<span style="font-size:9px;color:var(--text3);flex-shrink:0;font-family:DM Mono,monospace;max-width:70px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+t.paper.slice(0,18)+'</span>'
       +'<span id="ta-'+i+'" style="color:var(--text3);font-size:10px;flex-shrink:0;margin-left:3px">▼</span>'
@@ -1962,6 +2070,18 @@ function renderTopics(topics,stats){
 
   document.getElementById('topicList').innerHTML=html;
   document.getElementById('discoverResults').style.display='block';
+
+  // 异步加载历史标记，完成后在已做过的条目上显示标记
+  getHistoryTitles().then(function(histMap){
+    topics.forEach(function(t,i){
+      if(histMap[t.title]){
+        var titleEl=document.querySelector('[data-tidx="'+i+'"] .topic-title-text');
+        // 在行尾加 ✓已做 标签
+        var doneTag=document.getElementById('done-tag-'+i);
+        if(doneTag){ doneTag.style.display='inline-flex'; doneTag.title='已于'+histMap[t.title]+'做过'; }
+      }
+    });
+  });
 }
 
 function toggleDetail(i,ev){
@@ -2040,6 +2160,7 @@ async function toggleFavorite(i,btn){
 
 function selectTopic(i){
   selectedTopic=window._topics[i];
+  addHistory(selectedTopic); // 自动记录历史
   document.querySelectorAll('.topic-card').forEach(function(el,j){el.classList.toggle('selected',j===i);});
   setTimeout(function(){nav('produce');},280);
 }
@@ -2141,7 +2262,7 @@ function updateProduce(){
     document.getElementById('specialModeBox').style.display = 'block';
     var info = document.getElementById('specialBatchInfo');
     info.innerHTML = '✦ 专题模式：综合 <b>'+topics.length+'篇</b> 同主题论文 + AI领域系统知识，生成 12–20 分钟深度纪录片脚本。<br>'
-      +'长视频脚本分步生成（中文→英文），解决超长截断问题；两条线可同步运行。';
+      +'摘要超出单次token限制时自动分批读取，不遗漏任何内容。';
     var listHtml = topics.map(function(t,i){
       var journal = (t.srcPaper && t.srcPaper.journal) ? t.srcPaper.journal : (t.paper||'');
       var year = (t.srcPaper && t.srcPaper.year) ? t.srcPaper.year : '';
@@ -2151,19 +2272,15 @@ function updateProduce(){
         +'</div>';
     }).join('');
     document.getElementById('specialPaperList').innerHTML = listHtml;
-    // 改按钮文字 + 显示分步提示
-    document.getElementById('genBtn1').textContent = '✦ 分步生成专题脚本（中文→英文）';
+    // 改按钮文字
+    document.getElementById('genBtn1').textContent = '✦ 生成专题 YouTube 脚本（12–20min）';
     document.getElementById('genBtn2').textContent = '✦ 生成专题 TikTok + 配图';
-    var hint = document.getElementById('segmentedHint');
-    if(hint) hint.style.display = 'block';
   } else {
     window._isSpecialTopic = false;
     document.getElementById('selTitle').textContent = selectedTopic.title;
     document.getElementById('specialModeBox').style.display = 'none';
     document.getElementById('genBtn1').textContent = '✦ 生成 YouTube 脚本';
     document.getElementById('genBtn2').textContent = '✦ 生成 TikTok + 配图';
-    var hint2 = document.getElementById('segmentedHint');
-    if(hint2) hint2.style.display = 'none';
   }
 
   var sb = document.getElementById('safetyBox');
@@ -2398,7 +2515,6 @@ function stopBatch(n){
   clearInterval(window['_timer'+n]);
   var buf=document.getElementById('outputBox'+n).textContent||'';
   document.getElementById('genLoading'+n).style.display='none';
-  if(n===1){ var sp=document.getElementById('segmentProgress'); if(sp)sp.style.display='none'; }
   if(buf.length>20){
     // 已有内容，显示输出区
     document.getElementById('outputArea'+n).style.display='block';
@@ -3122,19 +3238,6 @@ async function generateSpecialBatch1(){
   document.getElementById('genArea1').style.display = 'none';
   document.getElementById('genLoading1').style.display = 'block';
   document.getElementById('outputArea1').style.display = 'none';
-  // 显示分步进度条
-  var segProg = document.getElementById('segmentProgress');
-  if(segProg) segProg.style.display = 'block';
-  var setStep = function(n){
-    [1,2,3].forEach(function(i){
-      var el = document.getElementById('segStep'+i);
-      if(!el) return;
-      el.style.background = i < n ? 'var(--teal)' : i === n ? 'var(--accent)' : 'var(--surface)';
-      el.style.color = i <= n ? '#fff' : 'var(--text3)';
-      el.style.borderColor = i <= n ? 'transparent' : 'var(--border)';
-    });
-  };
-  setStep(0);
 
   var timer = startTimer('genSubLine1',[
     '整合'+topics.length+'篇论文摘要...',
@@ -3142,17 +3245,20 @@ async function generateSpecialBatch1(){
     '规划纪录片结构...',
     '撰写开场钩子...',
     '逐章展开核心发现...',
+    '撰写英文专题脚本...',
     '打磨科普语言...'
   ]);
-  window._timer1 = timer;
 
-  // ─── 构建上下文 ───
   var contextChunks = buildSpecialContext();
+  var topicNames = topics.map(function(t,i){ return (i+1)+'. '+t.title; }).join('\n');
   var totalPapers = topics.length;
+
+  // 如果只有一段直接注入，多段先用 callClaude 做摘要合并再生成
   var mergedContext = '';
   if(contextChunks.length === 1){
     mergedContext = contextChunks[0];
   } else {
+    // 多批摘要先让 AI 提炼关键点，再合并
     var summaries = [];
     for(var ci = 0; ci < contextChunks.length; ci++){
       var chunkSys = '你是生物医学文献分析专家。从以下论文摘要中提炼每篇的核心发现、关键数据和机制，每篇用3-5句话概括，保留所有具体数字。直接输出，不加额外说明。';
@@ -3169,27 +3275,19 @@ async function generateSpecialBatch1(){
 
   var ref = buildRefContext();
   var refSection = ref.textBlock ? '\n\n=== 用户补充资料 ===\n'+ref.textBlock+'\n=== 补充资料结束 ===' : '';
+
   var specialSys = getDocStyle();
-  var cy = new Date().getFullYear();
-  var baseContext =
+  var specialMsg =
     '你是顶级科学纪录片编剧，擅长把多篇前沿论文整合成一部引人入胜的深度专题纪录片脚本。\n\n'
     +'本次专题包含 '+totalPapers+' 篇同主题学术论文，请综合所有论文的发现，'
-    +'同时调用你对该领域的系统性知识（截止'+cy+'年），创作一部完整的深度科普专题。\n\n'
+    +'同时调用你对该领域的系统性知识（截止2025年），创作一部完整的深度科普专题。\n\n'
     +'=== 论文资料 ===\n'+mergedContext+refSection+'\n=== 资料结束 ===\n\n'
     +'防降权规则：\n'
     +'- 永远用"研究发现/研究表明/研究提示"，不用"治愈/证明有效/临床证明"\n'
     +'- 明确区分相关性与因果关系\n'
-    +'- 末尾给出1-3条实用建议\n\n';
-
-  var outEl = document.getElementById('outputBox1');
-  outEl.textContent = '';
-  var statusLine = document.getElementById('genStatusLine1');
-
-  // ════ 步骤1：中文脚本 ════
-  setStep(1);
-  if(statusLine) statusLine.textContent = '步骤 1/3 · 正在生成中文专题脚本';
-  var msgCN = baseContext
-    +'请生成【仅中文部分】的YouTube专题脚本（目标时长 12-20 分钟）：\n\n'
+    +'- 末尾给出1-3条实用建议\n\n'
+    +'请生成以下两个脚本：\n\n'
+    +'### 1. YouTube 中文专题脚本（目标时长 12-20 分钟）\n'
     +'结构：\n'
     +'- 震撼开场 Hook（30秒，用最惊人的发现吸引注意力）\n'
     +'- 专题背景（这个话题为什么重要，影响多少人）\n'
@@ -3199,92 +3297,33 @@ async function generateSpecialBatch1(){
     +'- 实用行动建议\n'
     +'- 有力结尾\n'
     +'每个章节都要加 *[Visual: ...]* 画面提示。全文不要截断。\n\n'
-    +'重要：只输出中文脚本，不要输出英文脚本。';
+    +'### 2. YouTube 英文专题脚本（12-20 分钟）\n'
+    +'Same comprehensive structure for English-speaking audience. Include *[Visual: ...]*. Do not truncate.';
 
-  var bufCN = '';
-  var aborted = false;
+  var outEl = document.getElementById('outputBox1');
+  outEl.textContent = '';
+  var buf = '';
   try{
-    await callClaudeStreamWithImages(specialSys, msgCN, ref.imageBlocks, function(chunk){
-      if(document.getElementById('genLoading1').style.display !== 'none' && bufCN.length === 0){
-        // 首chunk: 显示输出区但保留loading（两者共存）
+    await callClaudeStreamWithImages(specialSys, specialMsg, ref.imageBlocks, function(chunk){
+      if(document.getElementById('genLoading1').style.display !== 'none'){
+        clearInterval(timer);
+        document.getElementById('genLoading1').style.display = 'none';
         document.getElementById('outputArea1').style.display = 'block';
       }
-      bufCN += chunk;
-      outEl.textContent = '=== 📺 YouTube 中文专题脚本 ===\n\n' + bufCN;
-      outEl.scrollTop = outEl.scrollHeight;
-      document.getElementById('wordCount1').textContent = '步骤1/3 · 中文生成中… '+bufCN.length+'字';
+      buf += chunk; outEl.textContent = buf; outEl.scrollTop = outEl.scrollHeight;
+      document.getElementById('wordCount1').textContent = '生成中… '+buf.length+'字';
     });
+    outputFull = buf;
+    document.getElementById('wordCount1').textContent = '共'+buf.length+'字';
+    checkPublishRow();
+    revealBatch3();
   }catch(e){
-    aborted = true;
     clearInterval(timer);
     document.getElementById('genLoading1').style.display = 'none';
-    if(segProg) segProg.style.display = 'none';
-    if(bufCN.length > 20){
-      document.getElementById('outputArea1').style.display = 'block';
-      document.getElementById('wordCount1').textContent = '已停止 · 中文部分'+bufCN.length+'字（不完整）';
-      outputFull = bufCN;
-      revealBatch3();
-    } else {
-      document.getElementById('genArea1').style.display = 'block';
-      document.getElementById('genBtn1').disabled = false;
-    }
-    return;
+    document.getElementById('genArea1').style.display = 'block';
+    document.getElementById('genBtn1').disabled = false;
+    alert('生成出错：'+e.message);
   }
-
-  // ════ 步骤2：英文脚本 ════
-  setStep(2);
-  if(statusLine) statusLine.textContent = '步骤 2/3 · 正在生成英文专题脚本';
-  var msgEN = baseContext
-    +'Please generate ONLY the English version of the YouTube documentary script (12-20 min):\n\n'
-    +'Structure:\n'
-    +'- Shocking Hook (30s, most surprising finding)\n'
-    +'- Topic Background (why this matters, who is affected)\n'
-    +'- Core Chapters (one chapter per paper, use ## headers, deep-dive findings/data/mechanisms)\n'
-    +'- Synthesis (what all studies point to)\n'
-    +'- Scientific Caveats (what these studies cannot prove)\n'
-    +'- Practical Action Tips\n'
-    +'- Strong Closing\n'
-    +'Add *[Visual: ...]* for each section. Full length, do not truncate.\n\n'
-    +'IMPORTANT: Output ONLY the English script, no Chinese content.';
-
-  var bufEN = '';
-  try{
-    await callClaudeStreamWithImages(specialSys, msgEN, [], function(chunk){
-      bufEN += chunk;
-      outEl.textContent = '=== 📺 YouTube 中文专题脚本 ===\n\n' + bufCN
-        + '\n\n\n=== 📺 YouTube English Documentary Script ===\n\n' + bufEN;
-      outEl.scrollTop = outEl.scrollHeight;
-      document.getElementById('wordCount1').textContent = '步骤2/3 · 英文生成中… 已累计'+(bufCN.length+bufEN.length)+'字';
-    });
-  }catch(e){
-    aborted = true;
-    clearInterval(timer);
-    document.getElementById('genLoading1').style.display = 'none';
-    if(segProg) segProg.style.display = 'none';
-    var combined = '=== 📺 YouTube 中文专题脚本 ===\n\n'+bufCN
-      +(bufEN.length>20?'\n\n\n=== 📺 YouTube English Documentary Script ===\n\n'+bufEN:'');
-    outEl.textContent = combined;
-    outputFull = combined;
-    document.getElementById('outputArea1').style.display = 'block';
-    document.getElementById('wordCount1').textContent = '已停止 · 英文部分不完整 · 共'+(bufCN.length+bufEN.length)+'字';
-    checkPublishRow(); revealBatch3();
-    return;
-  }
-
-  // ════ 步骤3：合并完成 ════
-  setStep(3);
-  clearInterval(timer);
-  document.getElementById('genLoading1').style.display = 'none';
-  if(segProg) segProg.style.display = 'none';
-
-  var finalText = '=== 📺 YouTube 中文专题脚本 ===\n\n'+bufCN
-    +'\n\n\n=== 📺 YouTube English Documentary Script ===\n\n'+bufEN;
-  outEl.textContent = finalText;
-  outputFull = finalText;
-  document.getElementById('outputArea1').style.display = 'block';
-  document.getElementById('wordCount1').textContent = '✓ 分步生成完成 · 共'+(bufCN.length+bufEN.length)+'字（中'+bufCN.length+' + 英'+bufEN.length+'）';
-  checkPublishRow();
-  revealBatch3();
 }
 
 async function generateSpecialBatch2(){
