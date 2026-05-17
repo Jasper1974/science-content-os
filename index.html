@@ -1622,32 +1622,3 @@ function buildChecklist(){
   updProg();
   document.getElementById('pubSuccess').style.display='none';
 }
-function toggleCheck(id){
-  checkState[id]=!checkState[id];
-  document.getElementById('ci_'+id).classList.toggle('done',!!checkState[id]);
-  document.getElementById('cb_'+id).textContent=checkState[id]?'✓':'';
-  updProg();
-}
-function updProg(){
-  var done=Object.values(checkState).filter(Boolean).length,total=CL.length;
-  document.getElementById('pubProg').style.width=(done/total*100)+'%';
-  document.getElementById('pubSub').textContent=done+' / '+total+' 完成';
-  document.getElementById('pubSuccess').style.display=done===total?'block':'none';
-}
-function newContent(){
-  selectedTopic=null;outputFull='';checkState={};window._topics=[];
-  document.getElementById('discoverHero').classList.remove('compact');
-  document.getElementById('discoverResults').style.display='none';
-  document.getElementById('discoverLoading').style.display='none';
-  document.getElementById('searchInput').value='';
-  nav('discover');
-}
-
-/* ═══════════════════════════════════════════
-   INIT
-═══════════════════════════════════════════ */
-initTags();buildChecklist();updateKeyStatus();
-
-</script>
-</body>
-</html>
