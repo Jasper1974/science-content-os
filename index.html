@@ -516,9 +516,6 @@ body {
   <button class="nav-item" onclick="nav('produce')" id="nav-produce">
     <span class="nav-icon">✦</span> 生产
   </button>
-  <button class="nav-item" onclick="nav('publish')" id="nav-publish">
-    <span class="nav-icon">🚀</span> 发布
-  </button>
   <button class="nav-item" onclick="nav('favorites')" id="nav-favorites">
     <span class="nav-icon">⭐</span> 收藏夹
   </button>
@@ -531,7 +528,7 @@ body {
 <div class="mob-nav">
   <button class="mob-btn active" onclick="nav('discover')" id="mob-discover"><span class="mob-icon">🔍</span>选题</button>
   <button class="mob-btn" onclick="nav('produce')" id="mob-produce"><span class="mob-icon">✦</span>生产</button>
-  <button class="mob-btn" onclick="nav('publish')" id="mob-publish"><span class="mob-icon">🚀</span>发布</button>
+  <button class="mob-btn" onclick="nav('favorites')" id="mob-favorites"><span class="mob-icon">⭐</span>收藏</button>
 </div>
 
 <div class="main">
@@ -574,7 +571,7 @@ body {
             <div class="results-count" id="resultsCount"></div>
           </div>
           <div style="display:flex;gap:8px">
-            <button class="btn-secondary" onclick="toggleSelectMode()" id="selectModeBtn" style="padding:8px 14px;font-size:12px;border-color:var(--accent);color:var(--accent)">☑ 专题多选</button>
+            <button class="btn-secondary" onclick="toggleSelectAll()" id="selectModeBtn" style="padding:8px 14px;font-size:12px;border-color:var(--accent);color:var(--accent)">☑ 全选专题</button>
             <button class="btn-secondary" onclick="forceRefetch()" style="padding:8px 14px;font-size:12px;border-color:var(--amber);color:var(--amber)">重新抓取</button>
             <button class="btn-secondary" onclick="doSearch()" style="padding:8px 14px;font-size:12px">刷新评分</button>
           </div>
@@ -713,7 +710,23 @@ body {
       </div>
 
       <div id="publishRow" style="display:none;margin-top:16px">
-        <button class="btn-primary full" onclick="nav('publish')">进入发布清单 →</button>
+        <button class="btn-secondary full" onclick="toggleInlineChecklist()" style="justify-content:center;gap:8px" id="checklistToggleBtn">
+          🚀 发布清单 <span id="checklistProgSpan" style="font-size:11px;color:var(--text3)">0 / 13</span>
+        </button>
+        <div id="inlineChecklist" style="display:none;margin-top:12px;background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:16px 20px">
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
+            <span style="font-size:13px;font-weight:700">发布清单</span>
+            <span style="font-size:12px;color:var(--text2)" id="pubSubInline">逐项完成，打勾确认</span>
+          </div>
+          <div class="progress-wrap" style="margin-bottom:14px"><div class="progress-fill" id="pubProgInline" style="width:0%"></div></div>
+          <div id="checklistElInline"></div>
+          <div id="pubSuccessInline" style="display:none">
+            <div class="success-box">
+              <div style="font-size:24px;margin-bottom:8px">🎉</div>
+              <div style="font-size:15px;font-weight:700;color:var(--green)">全部完成！</div>
+            </div>
+          </div>
+        </div>
       </div>
 
       <!-- BATCH 3: 分镜表 -->
@@ -1840,19 +1853,17 @@ function renderTopics(topics,stats){
       +'</div>';
   }
 
-  var html='<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:0;border:1px solid var(--border);border-radius:10px;overflow:hidden">';
+  var html='<div style="display:flex;gap:0;border:1px solid var(--border);border-radius:10px;overflow:hidden;align-items:flex-start">';
   var maxRows=Math.ceil(topics.length/3);
-  for(var row=0;row<maxRows;row++){
-    for(var col=0;col<3;col++){
+  for(var col=0;col<3;col++){
+    html+='<div style="flex:1;min-width:0;'+(col<2?'border-right:1px solid var(--border);':'')+'display:flex;flex-direction:column">';
+    for(var row=0;row<maxRows;row++){
       var item=cols[col][row];
       if(item){
-        html+='<div style="border-right:'+(col<2?'1px solid var(--border)':'none')+'">'
-          +renderItem(item.t,item.i)
-          +'</div>';
-      }else{
-        html+='<div></div>';
+        html+=renderItem(item.t,item.i);
       }
     }
+    html+='</div>';
   }
   html+='</div>';
 
@@ -2390,10 +2401,45 @@ async function generateBatch2(){
   }
 }
 
+function toggleInlineChecklist(){
+  var box = document.getElementById('inlineChecklist');
+  var isOpen = box.style.display !== 'none';
+  box.style.display = isOpen ? 'none' : 'block';
+  if(!isOpen) buildInlineChecklist();
+}
+
+function buildInlineChecklist(){
+  checkState={};
+  document.getElementById('checklistElInline').innerHTML=CL.map(function(item){
+    return '<div class="check-item" id="ici_'+item.id+'" onclick="toggleInlineCheck(\''+item.id+'\')">'
+      +'<div class="chk-box" id="icb_'+item.id+'"></div>'
+      +'<div><div class="chk-label">'+item.l+'</div><div class="chk-desc">'+item.d+'</div></div>'
+      +'</div>';
+  }).join('');
+  updInlineProg();
+  document.getElementById('pubSuccessInline').style.display='none';
+}
+
+function toggleInlineCheck(id){
+  checkState[id]=!checkState[id];
+  document.getElementById('ici_'+id).classList.toggle('done',!!checkState[id]);
+  document.getElementById('icb_'+id).textContent=checkState[id]?'✓':'';
+  updInlineProg();
+}
+
+function updInlineProg(){
+  var done=Object.values(checkState).filter(Boolean).length,total=CL.length;
+  document.getElementById('pubProgInline').style.width=(done/total*100)+'%';
+  document.getElementById('pubSubInline').textContent=done+' / '+total+' 完成';
+  document.getElementById('checklistProgSpan').textContent=done+' / '+total;
+  document.getElementById('pubSuccessInline').style.display=done===total?'block':'none';
+}
+
 function checkPublishRow(){
   var has1=document.getElementById('outputArea1').style.display!=='none'&&document.getElementById('outputBox1').textContent.length>10;
   var has2=document.getElementById('outputArea2').style.display!=='none'&&document.getElementById('outputBox2').textContent.length>10;
   document.getElementById('publishRow').style.display=(has1||has2)?'block':'none';
+  if(has1||has2) buildInlineChecklist();
 }
 
 function resetBatch(n){
@@ -2430,12 +2476,8 @@ function copyOutput(n){
    PUBLISH CHECKLIST
 ═══════════════════════════════════════════ */
 function buildChecklist(){
-  checkState={};
-  document.getElementById('checklistEl').innerHTML=CL.map(function(item){
-    return '<div class="check-item" id="ci_'+item.id+'" onclick="toggleCheck(\''+item.id+'\')"><div class="chk-box" id="cb_'+item.id+'"></div><div><div class="chk-label">'+item.l+'</div><div class="chk-desc">'+item.d+'</div></div></div>';
-  }).join('');
-  updProg();
-  document.getElementById('pubSuccess').style.display='none';
+  // 发布清单已内联在生产页，这里保留空函数避免报错
+  buildInlineChecklist && buildInlineChecklist();
 }
 function toggleCheck(id){
   checkState[id]=!checkState[id];
@@ -2799,39 +2841,51 @@ window._specialMode = false;    // 是否处于选择模式
 window._isSpecialTopic = false; // 当前生产页是否专题模式
 window._specialTopics = [];     // 专题选中的topic对象数组
 
-function toggleSelectMode(){
-  window._specialMode = !window._specialMode;
-  var btn = document.getElementById('selectModeBtn');
-  if(window._specialMode){
-    btn.style.background = 'var(--accent)';
-    btn.style.color = '#fff';
-    btn.textContent = '✕ 退出多选';
-  } else {
-    btn.style.background = 'transparent';
-    btn.style.color = 'var(--accent)';
-    btn.textContent = '☑ 专题多选';
+function toggleSelectAll(){
+  var topics = window._topics || [];
+  if(!topics.length){ showToast('请先搜索选题'); return; }
+  var keys = Object.keys(window._specialSelected).map(Number);
+  var allSelected = keys.length === topics.length;
+  if(allSelected){
+    // 全部取消
     clearSpecialSelection();
+    var btn = document.getElementById('selectModeBtn');
+    if(btn){ btn.style.background='transparent'; btn.style.color='var(--accent)'; btn.textContent='☑ 全选专题'; }
+  } else {
+    // 全选
+    window._specialSelected = {};
+    topics.forEach(function(t,i){ window._specialSelected[i] = true; });
+    topics.forEach(function(t,i){
+      var chk = document.getElementById('chk-'+i);
+      if(chk) chk.classList.add('checked');
+    });
+    var btn = document.getElementById('selectModeBtn');
+    if(btn){ btn.style.background='var(--accent)'; btn.style.color='#fff'; btn.textContent='✕ 取消全选'; }
+    updateSpecialBar();
   }
 }
 
+function toggleSelectMode(){
+  // 兼容旧调用，重定向到全选
+  toggleSelectAll();
+}
+
 function toggleSpecialSelect(i){
-  if(!window._specialMode){
-    // 未开启多选模式时点勾选框自动开启
-    window._specialMode = true;
-    var btn = document.getElementById('selectModeBtn');
-    if(btn){ btn.style.background='var(--accent)'; btn.style.color='#fff'; btn.textContent='✕ 退出多选'; }
-  }
   if(window._specialSelected[i]){
     delete window._specialSelected[i];
   } else {
-    var keys = Object.keys(window._specialSelected).length;
-    if(keys >= 20){ showToast('最多选择20篇论文'); return; }
     window._specialSelected[i] = true;
   }
-  // 更新勾选框样式
   var chk = document.getElementById('chk-'+i);
-  if(chk){
-    chk.classList.toggle('checked', !!window._specialSelected[i]);
+  if(chk) chk.classList.toggle('checked', !!window._specialSelected[i]);
+  // 更新全选按钮状态
+  var topics = window._topics || [];
+  var keys = Object.keys(window._specialSelected).length;
+  var btn = document.getElementById('selectModeBtn');
+  if(btn){
+    if(keys === 0){ btn.style.background='transparent'; btn.style.color='var(--accent)'; btn.textContent='☑ 全选专题'; }
+    else if(keys === topics.length){ btn.style.background='var(--accent)'; btn.style.color='#fff'; btn.textContent='✕ 取消全选'; }
+    else{ btn.style.background='var(--accent)'; btn.style.color='#fff'; btn.textContent='✕ 取消全选（'+keys+'）'; }
   }
   updateSpecialBar();
 }
@@ -2858,6 +2912,8 @@ function clearSpecialSelection(){
   });
   window._specialSelected = {};
   document.getElementById('specialBar').style.display = 'none';
+  var btn = document.getElementById('selectModeBtn');
+  if(btn){ btn.style.background='transparent'; btn.style.color='var(--accent)'; btn.textContent='☑ 全选专题'; }
 }
 
 function startSpecialTopic(){
