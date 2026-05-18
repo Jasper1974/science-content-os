@@ -1564,13 +1564,12 @@ async function fetchPapersViaClaudeStrict(query){
   else if(data.content&&data.content[0]&&data.content[0].text)text=data.content[0].text;
   if(data.error)throw new Error(data.error.message||JSON.stringify(data.error));
   dbg('fetchStrict raw: '+text.slice(0,200));
-  // 本地过滤：必须含搜索关键词
+  // 本地过滤：必须含搜索关键词（含中文同义词）
   var papers=parsePaperLines(text);
-  var qWords=query.toLowerCase().split(/\s+/).filter(function(w){return w.length>3;});
+  var qWords=query.toLowerCase().split(/\s+/).filter(function(w){return w.length>2;});
   if(qWords.length>0){
     papers=papers.filter(function(p){
-      var hay=(p.title+' '+(p.abstract||'')).toLowerCase();
-      return qWords.some(function(w){return hay.indexOf(w)>=0;});
+      return topicMatchesQuery(query,{title:p.title,english_title:p.title,hook:'',paper:'',srcPaper:p});
     });
   }
   return papers;
@@ -1615,6 +1614,31 @@ async function fetchPapersViaClaude(dirs,wl){
   if(data.error)throw new Error(data.error.message||JSON.stringify(data.error));
   dbg('fetchPapers raw (200 chars): '+text.slice(0,200));
   return parsePaperLines(text);
+}
+
+/* 手动搜索：判断选题/源论文是否与查询相关（支持中文同义词，OR 匹配） */
+function topicMatchesQuery(q,t){
+  var qwords=q.toLowerCase().split(/\s+/).filter(function(w){return w.length>2;});
+  var syn={
+    microplastic:['微塑料','塑料微粒','纳米塑料'],
+    microplastics:['微塑料','塑料微粒','纳米塑料'],
+    nanoplastic:['纳米塑料','微塑料'],
+    nanoplastics:['纳米塑料','微塑料'],
+    plastic:['塑料','微粒'],
+    accumulation:['积累','蓄积','沉积'],
+    organ:['器官','脏器']
+  };
+  var extra=[];
+  qwords.forEach(function(w){
+    var stem=w.replace(/s$/,'');
+    if(syn[w])extra=extra.concat(syn[w]);
+    if(stem!==w&&syn[stem])extra=extra.concat(syn[stem]);
+  });
+  var hay=(t.title+' '+(t.english_title||'')+' '+(t.hook||'')+' '+(t.paper||'')).toLowerCase();
+  if(t.srcPaper)hay+=' '+(t.srcPaper.title||'')+' '+(t.srcPaper.abstract||'');
+  var allKw=qwords.concat(extra);
+  if(allKw.length===0)return true;
+  return allKw.some(function(w){return hay.indexOf(w.toLowerCase())>=0;});
 }
 
 function parsePaperLines(text){
@@ -1707,6 +1731,7 @@ async function doSearch(){
 
   try{
     dbg('=== START doSearch isManual='+isManual+' q='+q);
+    var manualAll=[]; // 手动搜索：仅评本次抓到的论文，绝不混用全库未评分
 
     /* Phase 1: fetch papers */
     if(!isManual){
@@ -1722,7 +1747,6 @@ async function doSearch(){
       });
     }else{
       setMsg('搜索论文: '+q,'');
-      var manualAll=[];
 
       // Step 1: 真实论文源（PubMed + SS + EuropePMC + bioRxiv），覆盖近5年
       try{
@@ -1749,7 +1773,7 @@ async function doSearch(){
         await addPapers(manualAll);
         setMsg('已抓取','找到'+manualAll.length+'篇相关论文');
       }else{
-        setMsg('未找到相关论文','从已有论文库评分');
+        setMsg('未找到相关论文','');
         manualAll=[];
       }
     }
@@ -1758,33 +1782,39 @@ async function doSearch(){
     var stats=await getStats();
     dbg('stats: total='+stats.total+' scored='+stats.scored+' unscored='+stats.unscored);
 
-    // ── 手动搜索：独立通道，只评本次抓到的论文，AND过滤 ──
-    if(isManual && typeof manualAll!=='undefined' && manualAll.length>0){
-      setMsg('AI评分中...','仅评分本次搜索到的'+manualAll.length+'篇论文');
-      // 分批评分（每15篇一组，防止过载）
+    // ── 手动搜索：只评本次抓到的论文（禁止走下方全库 batch，否则会评到新冠/mTOR 等旧题） ──
+    if(isManual){
+      dbg('manual path: scoring ONLY '+manualAll.length+' papers from this search');
+      if(manualAll.length===0){
+        document.getElementById('discoverLoading').style.display='none';
+        document.getElementById('searchBtn').disabled=false;
+        document.getElementById('searchBtn').style.display='inline-block';
+        document.getElementById('stopBtn').style.display='none';
+        showErr('未抓到与「'+q+'」相关的论文。<br>请换更短关键词，例如：<b>microplastics brain</b>');
+        return;
+      }
+      setMsg('AI评分中...','仅评分本次 '+manualAll.length+' 篇');
       var manualTopics=[];
+      var manualTopicsRaw=[];
       var chunkSize=15;
       for(var ci=0;ci<manualAll.length;ci+=chunkSize){
         if(_searchStopped){dbg('Search stopped by user');break;}
         var chunk=manualAll.slice(ci,ci+chunkSize);
-        setMsg('AI评分中...','第'+(Math.floor(ci/chunkSize)+1)+'组，共'+Math.ceil(manualAll.length/chunkSize)+'组');
+        setMsg('AI评分中...','第'+(Math.floor(ci/chunkSize)+1)+'组 / '+Math.ceil(manualAll.length/chunkSize));
         try{
-          var mr=await scoreNextBatch(chunk);
+          var mr=await scoreNextBatch(chunk,q);
           var mparsed=parseTopics(mr.text,chunk);
-          manualTopics=manualTopics.concat(mparsed);
+          manualTopicsRaw=manualTopicsRaw.concat(mparsed);
         }catch(e){dbg('manual score chunk err: '+e.message);}
       }
-      // AND过滤：核心词（>3字符）全部命中才保留
-      var qwords=q.toLowerCase().split(/\s+/).filter(function(w){return w.length>3;});
-      // 只取前3个最具辨识度的词做AND，避免过严
-      var andWords=qwords.slice(0,3);
-      if(andWords.length>0){
-        manualTopics=manualTopics.filter(function(t){
-          var hay=(t.title+' '+(t.english_title||'')+' '+(t.hook||'')+' '+(t.srcPaper&&t.srcPaper.abstract?t.srcPaper.abstract:'')).toLowerCase();
-          return andWords.every(function(w){return hay.indexOf(w)>=0;});
+      manualTopics=manualTopicsRaw.filter(function(t){return topicMatchesQuery(q,t);});
+      dbg('manual filter: raw='+manualTopicsRaw.length+' matched='+manualTopics.length);
+      if(manualTopics.length===0&&manualTopicsRaw.length>0){
+        manualTopics=manualTopicsRaw.filter(function(t){
+          return t.srcPaper&&topicMatchesQuery(q,{title:'',english_title:'',hook:'',paper:'',srcPaper:t.srcPaper});
         });
+        dbg('fallback by srcPaper: '+manualTopics.length);
       }
-      // 去重
       var mseen={};
       manualTopics=manualTopics.filter(function(t){
         var k=t.title.slice(0,20);
@@ -1797,14 +1827,15 @@ async function doSearch(){
       document.getElementById('searchBtn').style.display='inline-block';
       document.getElementById('stopBtn').style.display='none';
       if(manualTopics.length===0){
-        showErr('未找到足够相关论文。建议用更简短的核心词搜索，例如：<b>microplastics brain</b>');
+        showErr('已评分但未筛出与「'+q+'」匹配的选题。<br>请用更短核心词，例如：<b>microplastics brain</b>');
         return;
       }
-      renderTopics(manualTopics, stats);
+      renderTopics(manualTopics,stats);
       document.getElementById('discoverHero').classList.add('compact');
       return;
     }
 
+    dbg('auto path: scoring from full paper DB');
     // ── 自动模式：从全库批量评分 ──
     setMsg('AI评分中...','库存'+stats.total+'篇 未评'+stats.unscored+'篇');
     var allTopics=[];
@@ -1882,11 +1913,15 @@ async function forceRefetch(){
 }
 
 /* ── AI SCORING ── */
-async function scoreNextBatch(papers){
+async function scoreNextBatch(papers,searchQuery){
   var sep='\n---\n';
   var paperList=papers.map(function(p,i){
     return '['+String(i+1)+'] TITLE: '+p.title+' | JOURNAL: '+p.journal+' '+p.year+' | ABSTRACT: '+p.abstract;
   }).join(sep);
+
+  var topicFocus=searchQuery
+    ?'\n\nMANDATORY: The user searched for "'+searchQuery+'". Every TOPIC line MUST be directly about this subject. Do NOT output topics about other diseases or unrelated fields.\n'
+    :'';
 
   var sys='You are a celebrated science writer — think Carl Sagan meets Malcolm Gladwell. You have spent 20 years turning dense academic papers into must-watch content for general audiences. You understand what makes a non-scientist gasp, lean forward, or immediately text a friend. Your superpower is finding the single most jaw-dropping implication buried in a methods section or a result table, then phrasing it as a vivid, specific, concrete headline that a curious 35-year-old would click at 11pm. You NEVER write vague academic summaries. You write headlines that feel like discoveries. Output ONLY lines starting with TOPIC|. Zero other text.';
   var prompt='Evaluate these papers for YouTube/TikTok health science impact. Output ALL papers regardless of score.\n\n'
@@ -1940,10 +1975,10 @@ async function scoreNextBatch(papers){
     +'BAD:  "微塑料危害研究" "睡眠与健康关系" "癌症新发现" "肠道菌群综述"\n\n'
     +'Output format - one line per paper (ALL papers):\n'
     +'TOPIC|Chinese headline max 24 chars|English title|triggers|Journal Year|TotalScore|PersonalStakes|HopeAction|Extremity|Urgency|VividNumbers|EvidenceQuality|TopicRarity|CategoryKeyword|safe or warn|PaperNumber\n\n'
-    +'PAPERS:\n'+paperList;
+    +'PAPERS:\n'+paperList+topicFocus;
 
   try{
-    var text=await callClaude(sys,prompt,3000);
+    var text=await callClaude(sys,prompt+topicFocus,3000);
     dbg('scoreNextBatch raw (300): '+text.slice(0,300));
   }catch(e){dbg('score err: '+e.message);var text='';}
   await markScored(papers);
