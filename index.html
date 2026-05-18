@@ -1723,37 +1723,90 @@ async function doSearch(){
     }else{
       setMsg('搜索论文: '+q,'');
       var manualAll=[];
-      // Step 1: 真实论文源（PubMed + SS + EuropePMC + bioRxiv）
+
+      // Step 1: 真实论文源（PubMed + SS + EuropePMC + bioRxiv），覆盖近5年
       try{
         setMsg('搜索论文: '+q,'正在查询 PubMed / Semantic Scholar...');
-        var realPapers=await fetchPubMedReal(q, 24, 35); // 近两年时间窗口
+        var realPapers=await fetchPubMedReal(q,0,60); // 0-60月前，覆盖近5年
         dbg('manual real sources got '+realPapers.length+' papers');
         manualAll=manualAll.concat(realPapers);
       }catch(e){
         dbg('manual real fetch err: '+e.message);
       }
-      // Step 2: Claude严格召回补充（兜底）
+
+      // Step 2: Claude严格召回补充（兜底，确保有论文可评分）
       try{
         setMsg('搜索论文: '+q,'正在 Claude 补充召回...');
         var mp=await fetchPapersViaClaudeStrict(q);
         dbg('manual claude strict got '+mp.length+' papers');
         manualAll=manualAll.concat(mp);
       }catch(e){
-        dbg('manual fetch err: '+e.message);
+        dbg('manual claude fetch err: '+e.message);
       }
+
+      dbg('manual total before addPapers: '+manualAll.length);
       if(manualAll.length>0){
         await addPapers(manualAll);
         setMsg('已抓取','找到'+manualAll.length+'篇相关论文');
       }else{
         setMsg('未找到相关论文','从已有论文库评分');
+        manualAll=[];
       }
     }
 
     /* Phase 2: score */
     var stats=await getStats();
     dbg('stats: total='+stats.total+' scored='+stats.scored+' unscored='+stats.unscored);
-    setMsg('AI评分中...','库存'+stats.total+'篇 未评'+stats.unscored+'篇');
 
+    // ── 手动搜索：独立通道，只评本次抓到的论文，AND过滤 ──
+    if(isManual && typeof manualAll!=='undefined' && manualAll.length>0){
+      setMsg('AI评分中...','仅评分本次搜索到的'+manualAll.length+'篇论文');
+      // 分批评分（每15篇一组，防止过载）
+      var manualTopics=[];
+      var chunkSize=15;
+      for(var ci=0;ci<manualAll.length;ci+=chunkSize){
+        if(_searchStopped){dbg('Search stopped by user');break;}
+        var chunk=manualAll.slice(ci,ci+chunkSize);
+        setMsg('AI评分中...','第'+(Math.floor(ci/chunkSize)+1)+'组，共'+Math.ceil(manualAll.length/chunkSize)+'组');
+        try{
+          var mr=await scoreNextBatch(chunk);
+          var mparsed=parseTopics(mr.text,chunk);
+          manualTopics=manualTopics.concat(mparsed);
+        }catch(e){dbg('manual score chunk err: '+e.message);}
+      }
+      // AND过滤：核心词（>3字符）全部命中才保留
+      var qwords=q.toLowerCase().split(/\s+/).filter(function(w){return w.length>3;});
+      // 只取前3个最具辨识度的词做AND，避免过严
+      var andWords=qwords.slice(0,3);
+      if(andWords.length>0){
+        manualTopics=manualTopics.filter(function(t){
+          var hay=(t.title+' '+(t.english_title||'')+' '+(t.hook||'')+' '+(t.srcPaper&&t.srcPaper.abstract?t.srcPaper.abstract:'')).toLowerCase();
+          return andWords.every(function(w){return hay.indexOf(w)>=0;});
+        });
+      }
+      // 去重
+      var mseen={};
+      manualTopics=manualTopics.filter(function(t){
+        var k=t.title.slice(0,20);
+        if(mseen[k])return false;
+        mseen[k]=true;return true;
+      });
+      dbg('manual isolated FINAL topics='+manualTopics.length);
+      document.getElementById('discoverLoading').style.display='none';
+      document.getElementById('searchBtn').disabled=false;
+      document.getElementById('searchBtn').style.display='inline-block';
+      document.getElementById('stopBtn').style.display='none';
+      if(manualTopics.length===0){
+        showErr('未找到足够相关论文。建议用更简短的核心词搜索，例如：<b>microplastics brain</b>');
+        return;
+      }
+      renderTopics(manualTopics, stats);
+      document.getElementById('discoverHero').classList.add('compact');
+      return;
+    }
+
+    // ── 自动模式：从全库批量评分 ──
+    setMsg('AI评分中...','库存'+stats.total+'篇 未评'+stats.unscored+'篇');
     var allTopics=[];
     var batchNum=0;
     var maxBatches=6; // safety cap: max 6 batches
@@ -1777,16 +1830,6 @@ async function doSearch(){
       setMsg('AI评分第'+batchNum+'轮...','已有'+allTopics.length+'篇，目标60篇');
       var r=await scoreNextBatch(batch);
       var parsed=parseTopics(r.text,r.papers);
-      // 手动搜索：只保留与搜索词相关的条目（标题或英文标题命中）
-      if(isManual && q.length>0){
-        var qw=q.toLowerCase().split(/\s+/).filter(function(w){return w.length>3;});
-        if(qw.length>0){
-          parsed=parsed.filter(function(t){
-            var hay=(t.title+' '+(t.english_title||'')+' '+(t.hook||'')+' '+(t.paper||'')+(t.srcPaper&&t.srcPaper.abstract?t.srcPaper.abstract:'')).toLowerCase();
-            return qw.some(function(w){return hay.indexOf(w)>=0;});
-          });
-        }
-      }
       dbg('batch'+batchNum+' parsed='+parsed.length);
       allTopics=allTopics.concat(parsed);
 
