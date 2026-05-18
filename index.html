@@ -1528,7 +1528,128 @@ async function fetchPubMedReal(kw,dStart,dEnd){
     unique.push(p);
   });
   dbg('Total unique papers from all sources: '+unique.length);
+  unique.forEach(function(p){
+    if(p.paperOrigin!=='claude'){p.paperOrigin='api';p.verified=true;p.verifyMethod='api';}
+  });
   return unique;
+}
+
+/* ── 论文真实性核实（Claude 列出 → 用 PubMed / Europe PMC / SS 交叉验证） ── */
+function normTitle(s){
+  return (s||'').toLowerCase().replace(/[^\w\u4e00-\u9fa5\s]/g,' ').replace(/\s+/g,' ').trim();
+}
+function titlesMatch(a,b){
+  var na=normTitle(a),nb=normTitle(b);
+  if(!na||!nb)return false;
+  if(na===nb)return true;
+  if(na.length>18&&nb.length>18&&(na.indexOf(nb)>=0||nb.indexOf(na)>=0))return true;
+  var wa=na.split(' ').filter(function(w){return w.length>3;});
+  var wb=nb.split(' ').filter(function(w){return w.length>3;});
+  if(wa.length<2||wb.length<2)return na.slice(0,40)===nb.slice(0,40);
+  var hit=0;
+  wa.forEach(function(w){if(wb.indexOf(w)>=0)hit++;});
+  return hit/Math.max(wa.length,wb.length)>=0.5;
+}
+function paperFromRecord(rec,method){
+  rec.paperOrigin='claude';
+  rec.verified=true;
+  rec.verifyMethod=method;
+  return rec;
+}
+async function fetchPubMedRecordByPmid(pmid){
+  if(!/^\d{6,10}$/.test(String(pmid)))return null;
+  try{
+    var base=window.location.origin+'/api/pubmed';
+    var fr=await fetch(base+'?action=fetch&ids='+pmid);
+    var list=parsePubMedXML(await fr.text());
+    if(list.length)return list[0];
+  }catch(e1){dbg('verify pmid proxy: '+e1.message);}
+  try{
+    var fr2=await fetch('https://eutils.ncbi.nlm.nih.gov/entrez/eutils/efetch.fcgi?db=pubmed&id='+pmid+'&rettype=abstract&retmode=xml');
+    var list2=parsePubMedXML(await fr2.text());
+    if(list2.length)return list2[0];
+  }catch(e2){dbg('verify pmid direct: '+e2.message);}
+  return null;
+}
+async function searchEuropePMCByTitle(title){
+  var q='TITLE:"'+title.replace(/"/g,'').slice(0,120)+'"';
+  var url='https://www.ebi.ac.uk/europepmc/webservices/rest/search?query='+encodeURIComponent(q)+'&resultType=core&pageSize=5&format=json';
+  try{
+    var res=await fetch(url);
+    var data=await res.json();
+    var best=null;
+    ((data.resultList&&data.resultList.result)||[]).forEach(function(p){
+      if(!p.title)return;
+      if(titlesMatch(p.title,title)){
+        var ab=(p.abstractText||'').trim();
+        best={
+          title:p.title,abstract:ab.slice(0,600),
+          journal:p.journalTitle||'',year:String(p.pubYear||''),
+          pmid:p.pmid||('epmc_'+p.id),fetchedAt:new Date().toISOString()
+        };
+      }
+    });
+    return best;
+  }catch(e){dbg('verify EPMC title: '+e.message);return null;}
+}
+async function searchSemanticScholarByTitle(title){
+  var q=title.slice(0,100);
+  var proxyUrl='/api/semantic?query='+encodeURIComponent(q)+'&limit=5';
+  var directUrl='https://api.semanticscholar.org/graph/v1/paper/search?query='+encodeURIComponent(q)+'&limit=5&fields=title,abstract,year,venue,externalIds';
+  var data;
+  try{
+    var r1=await fetch(proxyUrl);data=await r1.json();
+  }catch(e1){
+    try{var r2=await fetch(directUrl);data=await r2.json();}catch(e2){return null;}
+  }
+  var best=null;
+  (data.data||[]).forEach(function(p){
+    if(!p.title||!titlesMatch(p.title,title))return;
+    best={
+      title:p.title,abstract:(p.abstract||'').slice(0,600),
+      journal:p.venue||'',year:String(p.year||''),
+      pmid:(p.externalIds&&p.externalIds.PubMed)||('ss_'+(p.paperId||'')),
+      fetchedAt:new Date().toISOString()
+    };
+  });
+  return best;
+}
+async function verifyClaudePaper(paper){
+  if(paper.verified&&paper.paperOrigin==='api')return paper;
+  var title=paper.title||'';
+  if(title.length<12)return null;
+  var pmid=(paper.pmid||'').replace(/[^0-9]/g,'');
+  if(/^\d{6,10}$/.test(pmid)){
+    var byPmid=await fetchPubMedRecordByPmid(pmid);
+    if(byPmid){
+      if(titlesMatch(byPmid.title,title)){
+        return paperFromRecord({
+          title:byPmid.title,abstract:byPmid.abstract||paper.abstract,
+          journal:byPmid.journal||paper.journal,year:byPmid.year||paper.year,
+          pmid:byPmid.pmid,fetchedAt:new Date().toISOString()
+        },'pubmed');
+      }
+      dbg('verify: PMID exists but title mismatch — '+title.slice(0,40));
+    }
+  }
+  var byEpmc=await searchEuropePMCByTitle(title);
+  if(byEpmc)return paperFromRecord(byEpmc,'europepmc');
+  var bySs=await searchSemanticScholarByTitle(title);
+  if(bySs)return paperFromRecord(bySs,'semantic');
+  return null;
+}
+async function verifyClaudePapers(papers,onStatus){
+  var kept=[],rejected=0;
+  for(var i=0;i<papers.length;i++){
+    if(onStatus)onStatus('核实 AI 论文 '+(i+1)+'/'+papers.length+'…');
+    if(papers[i].verified&&papers[i].paperOrigin==='api'){kept.push(papers[i]);continue;}
+    var v=await verifyClaudePaper(papers[i]);
+    if(v)kept.push(v);
+    else{rejected++;dbg('verify REJECT: '+(papers[i].title||'').slice(0,55));}
+    if(i<papers.length-1)await new Promise(function(r){setTimeout(r,280);});
+  }
+  dbg('verifyClaude: kept='+kept.length+' rejected='+rejected);
+  return kept;
 }
 
 /* 严格主题搜索：专门用于手动搜索，prompt三次强调只要该主题 */
@@ -1572,6 +1693,9 @@ async function fetchPapersViaClaudeStrict(query){
       return topicMatchesQuery(query,{title:p.title,english_title:p.title,hook:'',paper:'',srcPaper:p});
     });
   }
+  dbg('fetchStrict before verify: '+papers.length);
+  papers=await verifyClaudePapers(papers);
+  dbg('fetchStrict after verify: '+papers.length);
   return papers;
 }
 
@@ -1613,7 +1737,9 @@ async function fetchPapersViaClaude(dirs,wl){
   else if(data.content&&data.content[0]&&data.content[0].text)text=data.content[0].text;
   if(data.error)throw new Error(data.error.message||JSON.stringify(data.error));
   dbg('fetchPapers raw (200 chars): '+text.slice(0,200));
-  return parsePaperLines(text);
+  var papers=parsePaperLines(text);
+  papers=await verifyClaudePapers(papers);
+  return papers;
 }
 
 /* 手动搜索：判断选题/源论文是否与查询相关（支持中文同义词，OR 匹配） */
@@ -1664,7 +1790,9 @@ function parsePaperLines(text){
         journal:journal,
         year:year,
         pmid:pmid||('t_'+title.slice(0,20).replace(/\s/g,'_')),
-        fetchedAt:new Date().toISOString()
+        fetchedAt:new Date().toISOString(),
+        paperOrigin:'claude',
+        verified:false
       });
     }
   });
@@ -1758,11 +1886,11 @@ async function doSearch(){
         dbg('manual real fetch err: '+e.message);
       }
 
-      // Step 2: Claude严格召回补充（兜底，确保有论文可评分）
+      // Step 2: Claude严格召回 + 自动核实（PubMed/EuropePMC/SS），未通过的不入库
       try{
-        setMsg('搜索论文: '+q,'正在 Claude 补充召回...');
+        setMsg('搜索论文: '+q,'Claude 补充 + 核实真实性...');
         var mp=await fetchPapersViaClaudeStrict(q);
-        dbg('manual claude strict got '+mp.length+' papers');
+        dbg('manual claude strict (verified) got '+mp.length+' papers');
         manualAll=manualAll.concat(mp);
       }catch(e){
         dbg('manual claude fetch err: '+e.message);
@@ -2065,6 +2193,16 @@ function renderTopics(topics,stats){
     var scoreColor=t.total>=80?'var(--green)':t.total>=65?'var(--amber)':'var(--text2)';
     var pm=(t.srcPaper&&t.srcPaper.pmid&&t.srcPaper.pmid.match(/^[0-9]+$/))
       ?'<a href="https://pubmed.ncbi.nlm.nih.gov/'+t.srcPaper.pmid+'/" target="_blank" style="color:var(--accent);font-size:10px;text-decoration:none;flex-shrink:0;margin-right:4px" onclick="event.stopPropagation()">↗</a>':'';
+    var srcBadge='';
+    if(t.srcPaper){
+      if(t.srcPaper.paperOrigin==='api'||t.srcPaper.verifyMethod==='api'){
+        srcBadge='<span style="background:#22c55e18;border:1px solid #22c55e40;color:var(--green);font-size:9px;font-family:DM Mono,monospace;padding:1px 5px;border-radius:4px;flex-shrink:0" title="来自 PubMed 等数据库">真库</span>';
+      }else if(t.srcPaper.verified){
+        var vm=t.srcPaper.verifyMethod||'';
+        var vlabel=vm==='pubmed'?'PubMed核实':vm==='europepmc'?'EPMC核实':vm==='semantic'?'SS核实':'已核实';
+        srcBadge='<span style="background:#4fd1c518;border:1px solid #4fd1c540;color:var(--teal);font-size:9px;font-family:DM Mono,monospace;padding:1px 5px;border-radius:4px;flex-shrink:0" title="AI 列出后已在数据库中匹配">'+vlabel+'</span>';
+      }
+    }
     var warnIcon=t.safety_level==='warn'?'<span style="background:#f59e0b22;border:1px solid #f59e0b55;color:var(--amber);font-size:9px;font-family:DM Mono,monospace;padding:1px 5px;border-radius:4px;flex-shrink:0;white-space:nowrap">⚠ 需审核</span>':'';
     var s=t.scores||{};
     var scoreGrid='<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:3px;margin-bottom:8px">'
@@ -2093,7 +2231,7 @@ function renderTopics(topics,stats){
       +'<div class="trow" style="display:flex;align-items:center;padding:7px 10px;cursor:pointer;gap:6px" onclick="toggleDetail('+i+',event)">'
       +'<div id="chk-'+i+'" class="topic-checkbox'+(window._specialSelected&&window._specialSelected[i]?' checked':'')+'" onclick="event.stopPropagation();toggleSpecialSelect('+i+')" title="加入专题"></div>'
       +'<span style="font-size:10px;color:var(--text3);min-width:18px;text-align:right;flex-shrink:0;font-family:DM Mono,monospace">'+(i+1)+'</span>'
-      +pm+warnIcon
+      +pm+srcBadge+warnIcon
       +'<span style="font-size:13px;font-weight:600;flex:1;line-height:1.3">'+t.title+'</span>'
       +'<span style="font-size:12px;font-weight:800;color:'+scoreColor+';flex-shrink:0;font-family:DM Mono,monospace">'+t.total+'</span>'
       +'<span style="font-size:9px;color:var(--text3);flex-shrink:0;font-family:DM Mono,monospace;max-width:70px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+t.paper.slice(0,18)+'</span>'
