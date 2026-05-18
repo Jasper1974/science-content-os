@@ -1722,19 +1722,30 @@ async function doSearch(){
       });
     }else{
       setMsg('搜索论文: '+q,'');
+      var manualAll=[];
+      // Step 1: 真实论文源（PubMed + SS + EuropePMC + bioRxiv）
       try{
-        // 严格主题约束：专用严格搜索函数，三次强调只要该主题
+        setMsg('搜索论文: '+q,'正在查询 PubMed / Semantic Scholar...');
+        var realPapers=await fetchPubMedReal(q, 24, 35); // 近两年时间窗口
+        dbg('manual real sources got '+realPapers.length+' papers');
+        manualAll=manualAll.concat(realPapers);
+      }catch(e){
+        dbg('manual real fetch err: '+e.message);
+      }
+      // Step 2: Claude严格召回补充（兜底）
+      try{
+        setMsg('搜索论文: '+q,'正在 Claude 补充召回...');
         var mp=await fetchPapersViaClaudeStrict(q);
-        dbg('manual fetch got '+mp.length+' papers after strict filter');
-        if(mp.length>0){
-          await addPapers(mp);
-          setMsg('已抓取','找到'+mp.length+'篇相关论文（严格过滤后）');
-        }else{
-          setMsg('未找到相关论文','从已有论文库评分');
-        }
+        dbg('manual claude strict got '+mp.length+' papers');
+        manualAll=manualAll.concat(mp);
       }catch(e){
         dbg('manual fetch err: '+e.message);
-        setMsg('抓取失败','从已有论文库评分');
+      }
+      if(manualAll.length>0){
+        await addPapers(manualAll);
+        setMsg('已抓取','找到'+manualAll.length+'篇相关论文');
+      }else{
+        setMsg('未找到相关论文','从已有论文库评分');
       }
     }
 
