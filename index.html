@@ -1,10 +1,10 @@
 <!DOCTYPE html>
 <html lang="zh">
 <head>
-<!-- Paperstill index.html v2.2.0 · 2026-05-18 · 保存时请重命名为 index-v2.2.0.html 便于回溯 -->
+<!-- Paperstill index.html v2.3.1 · 2026-05-18 · 保存时请重命名为 index-v2.3.1.html 便于回溯 -->
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
-<title>Paperstill v2.2.0</title>
+<title>Paperstill v2.3.1</title>
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Mono:wght@400;500&family=Noto+Sans+SC:wght@400;500;700&display=swap');
 
@@ -101,20 +101,25 @@ body {
 .panel.active { display: flex; animation: fadeUp 0.25s ease; }
 @keyframes fadeUp { from{opacity:0;transform:translateY(6px)} to{opacity:1;transform:translateY(0)} }
 
-/* ── STICKY TOP BAR (search + upload, all pages) ── */
+/* ── STICKY TOP BAR (选题有结果后 / 生产页) ── */
 .top-bar {
+  display: none;
   position: sticky; top: 0; z-index: 95;
   background: var(--bg);
   border-bottom: 1px solid var(--border);
-  padding: 12px 40px 14px;
+  padding: 10px 40px 12px;
   flex-shrink: 0;
 }
+.top-bar.visible { display: block; }
+.top-bar.discover-compact .top-bar-head { display: none; }
 .top-bar-head {
   display: flex; align-items: center; justify-content: space-between;
   gap: 12px; margin-bottom: 10px; min-height: 28px;
 }
 .top-bar-title { font-size: 20px; font-weight: 800; letter-spacing: -0.02em; }
 .top-bar-title.compact { font-size: 15px; }
+.workspace-search { width: 100%; max-width: 720px; margin: 0 auto; }
+.hero-search-slot .workspace-search { max-width: 640px; }
 .top-bar-ctx {
   display: flex; align-items: center; gap: 10px; flex: 1; min-width: 0;
   font-size: 13px; color: var(--text2);
@@ -183,20 +188,24 @@ body {
 }
 
 /* ── DISCOVER ── */
+#panel-discover { flex: 1; min-height: 0; }
 .discover-hero {
-  padding: 24px 40px 8px;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-start;
+  padding: min(14vh, 100px) 40px 24px;
   text-align: center;
-  transition: all 0.3s;
+  transition: padding 0.3s;
 }
-.discover-hero.compact {
-  padding: 12px 40px 4px;
-  text-align: left;
-}
-.discover-hero.compact .hero-sub { display: none; }
-
-.hero-title { font-size: 28px; font-weight: 800; letter-spacing: -0.03em; margin-bottom: 4px; }
-.hero-sub { font-size: 13px; color: var(--text2); font-family: 'DM Mono', monospace; }
-.discover-hero.compact .hero-title { display: none; }
+.discover-hero.compact { display: none; }
+.hero-center { width: 100%; max-width: 720px; }
+.hero-title { font-size: 32px; font-weight: 800; letter-spacing: -0.03em; margin-bottom: 8px; }
+.hero-sub { font-size: 13px; color: var(--text2); font-family: 'DM Mono', monospace; margin-bottom: 22px; }
+.hero-search-slot { width: 100%; }
+.discover-body { flex: 1; padding: 16px 40px 40px; overflow-y: auto; min-height: 0; }
+.discover-body.has-results { padding-top: 8px; }
 
 .qtag {
   padding: 5px 13px; border-radius: 20px;
@@ -207,7 +216,6 @@ body {
 }
 .qtag:hover { border-color: var(--teal); color: var(--teal); background: #4fd1c510; }
 
-.discover-body { flex: 1; padding: 24px 40px 40px; overflow-y: auto; }
 
 .loading-wrap { display: flex; flex-direction: column; align-items: center; padding: 60px 20px; }
 .spinner {
@@ -548,10 +556,59 @@ body {
 .empty-title { font-size: 18px; font-weight: 700; margin-bottom: 8px; }
 .empty-sub { font-size: 13px; color: var(--text2); margin-bottom: 24px; }
 
+.produce-source-bar {
+  display: flex; flex-wrap: wrap; align-items: center; gap: 8px;
+  margin-bottom: 14px; padding: 10px 14px;
+  background: var(--surface2); border: 1px solid var(--border); border-radius: 10px;
+}
+.src-chip {
+  font-size: 12px; padding: 4px 10px; border-radius: 20px;
+  border: 1px solid var(--border2); font-family: 'DM Mono', monospace;
+}
+.src-chip.paperstill { border-color: #7c6cfc44; color: var(--accent); }
+.src-chip.external { border-color: #4fd1c544; color: var(--teal); }
+.produce-entry { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 40px 24px; text-align: center; }
+.source-pick { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; max-width: 520px; width: 100%; margin-top: 20px; }
+.source-card {
+  padding: 22px 16px; border-radius: 14px; border: 1.5px solid var(--border);
+  background: var(--surface); cursor: pointer; transition: all 0.18s; text-align: left;
+}
+.source-card:hover { border-color: var(--accent); transform: translateY(-2px); }
+.source-card h4 { font-size: 15px; font-weight: 800; margin-bottom: 6px; }
+.source-card p { font-size: 12px; color: var(--text2); line-height: 1.5; margin: 0; }
+
 /* ── PUBLISH ── */
 .publish-wrap { flex: 1; padding: 32px 40px; overflow-y: auto; }
-.progress-wrap { height: 3px; background: var(--border); border-radius: 2px; margin-bottom: 24px; overflow: hidden; }
+.progress-wrap { height: 3px; background: var(--border); border-radius: 2px; margin-bottom: 20px; overflow: hidden; }
 .progress-fill { height: 100%; background: linear-gradient(90deg, var(--accent), var(--teal)); border-radius: 2px; transition: width 0.3s; }
+
+.pub-section {
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: 12px; margin-bottom: 12px; overflow: hidden;
+}
+.pub-section > summary {
+  list-style: none; cursor: pointer; padding: 14px 16px;
+  font-size: 14px; font-weight: 700; display: flex; align-items: center;
+  justify-content: space-between; gap: 10px; user-select: none;
+}
+.pub-section > summary::-webkit-details-marker { display: none; }
+.pub-section > summary::after { content: '▾'; color: var(--text3); font-size: 12px; transition: transform 0.2s; }
+.pub-section:not([open]) > summary::after { transform: rotate(-90deg); }
+.pub-sec-prog { font-size: 11px; color: var(--text2); font-family: 'DM Mono', monospace; font-weight: 500; }
+.pub-section-body { padding: 0 14px 14px; border-top: 1px solid var(--border); }
+.pub-dynamic {
+  padding: 12px; margin-bottom: 10px; background: var(--surface2);
+  border-radius: 10px; font-size: 12px; color: var(--text2); line-height: 1.6;
+}
+.pub-dynamic b { color: var(--text); }
+.pub-dynamic-actions { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px; }
+.pub-dynamic-actions button {
+  padding: 6px 12px; border-radius: 8px; border: 1px solid var(--border2);
+  background: var(--bg); color: var(--text2); font-size: 11px; font-weight: 600;
+  cursor: pointer; font-family: 'Syne', sans-serif;
+}
+.pub-dynamic-actions button:hover { border-color: var(--accent); color: var(--text); }
+.pub-empty-hint { color: var(--amber); font-size: 12px; margin-top: 6px; }
 
 .check-item {
   display: flex; align-items: flex-start; gap: 12px;
@@ -635,14 +692,17 @@ body {
 
   <!-- 固定顶栏：搜索 + 上传（选题 / 生产共用） -->
   <div class="top-bar" id="topBar">
-    <div class="top-bar-head">
-      <div class="top-bar-title" id="topBarTitle">今日选题</div>
+    <div class="top-bar-head" id="topBarHead">
       <div class="top-bar-ctx" id="topBarCtx" style="display:none">
-        <span class="top-bar-ctx-lbl">当前选题</span>
+        <span class="top-bar-ctx-lbl">当前来源</span>
         <b id="topBarSelTitle">—</b>
         <button class="btn-secondary" onclick="nav('discover')" style="padding:5px 10px;font-size:11px;flex-shrink:0">换题材</button>
       </div>
     </div>
+    <div id="topBarSearchSlot"></div>
+  </div>
+
+  <div id="workspaceSearch" class="workspace-search">
     <div class="unified-input-wrap" id="refDropzone"
       ondragover="event.preventDefault();this.classList.add('drag-over')"
       ondragleave="this.classList.remove('drag-over')"
@@ -663,8 +723,11 @@ body {
 
   <div class="panel active" id="panel-discover">
     <div class="discover-hero" id="discoverHero">
-      <div class="hero-title">今日选题</div>
+      <div class="hero-center" id="heroCenter">
+        <div class="hero-title">今日选题</div>
       <div class="hero-sub">留空自动抓取，或输入关键词定向搜索 · 目标 60 条候选</div>
+        <div class="hero-search-slot" id="heroSearchSlot"><!-- slot --></div>
+      </div>
     </div>
 
     <div class="discover-body" id="discoverBody">
@@ -710,14 +773,18 @@ body {
     </div>
   </div>
   <div class="panel" id="panel-produce">
-    <div class="empty-state" id="no-topic">
-      <div class="empty-icon">👆</div>
-      <div class="empty-title">还没有选择题材</div>
-      <div class="empty-sub">去「选题」页选一个，AI 生成完整内容包</div>
-      <button class="btn-primary" onclick="nav('discover')">← 去选题</button>
+    <div class="produce-entry" id="no-topic">
+      <div class="empty-icon">✦</div>
+      <div class="empty-title">选择内容来源，开始分镜生产</div>
+      <div class="empty-sub">Paperstill 论文选题可加资料补充；也可只上传外部资料单独生产</div>
+      <div class="source-pick">
+        <div class="source-card" onclick="nav('discover')"><h4>📚 Paperstill 论文来源</h4><p>先搜集论文、选中主题，AI 读取论文摘要；如有上传文件，会一起整合作为补充。</p></div>
+        <div class="source-card" onclick="startExternalProduce()"><h4>📎 外部资料来源</h4><p>不选 Paperstill 论文，直接上传 PDF / Word / Markdown，独立生成独白和分镜。</p></div>
+      </div>
     </div>
     <div class="produce-wrap" id="produce-main" style="display:none">
       <div class="panel-title">分镜工作室 <span class="app-ver-pill" id="panelVersionPill"></span></div>
+      <div class="produce-source-bar" id="produceSourceBar"></div>
       <div class="selected-bar" style="display:none"><div class="sb-title" id="selTitle">—</div></div>
       <div id="safetyBox"></div>
 
@@ -746,7 +813,7 @@ body {
                 <div class="gen-icon-wrap"><div class="gen-ring"></div><div class="gen-ring-2"></div><div class="gen-core"></div></div>
                 <div class="gen-text-col">
                   <div class="gen-status-line" id="genStatusStudio">正在生成…</div>
-                  <div class="gen-sub-line" id="genSubLineStudio">读取 60 篇摘要与上传资料…</div>
+                  <div class="gen-sub-line" id="genSubLineStudio">读取当前内容来源…</div>
                 </div>
               </div>
             </div>
@@ -876,8 +943,8 @@ body {
   <!-- PUBLISH -->
   <div class="panel" id="panel-publish">
     <div class="publish-wrap">
-      <div class="panel-title">发布清单</div>
-      <div class="panel-sub" id="pubSub">逐项完成，打勾确认</div>
+      <div class="panel-title">发布中心</div>
+      <div class="panel-sub" id="pubSub">折叠分组 · 关联分镜 · 打勾会保存</div>
       <div class="progress-wrap"><div class="progress-fill" id="pubProg" style="width:0%"></div></div>
       <div id="checklistEl"></div>
       <div id="pubSuccess" style="display:none">
@@ -921,8 +988,10 @@ body {
 var selectedTopic=null,outputFull='',checkState={};
 var SK_STATE='crawl_state2',SK_PAPERS='paper_db2',SK_SCORED='scored_db2',SK_REF='ref_files_v1';
 var SCORE_N=60,FETCH_N=60,CRAWL_DIRS_N=20;
-var APP_VERSION='2.2.0';
+var APP_VERSION='2.3.1';
 var APP_BUILD='2026-05-18';
+var _produceSessionKey='';
+var SK_CHECK='pub_check_v1';
 var activePlatform='long';
 var storyboards={long:[],short:[]};
 var platformOutputs={long:'',short:''};
@@ -1061,31 +1130,87 @@ function nav(p){
   if(p==='favorites')renderFavorites();
   window.scrollTo(0,0);
 }
+function mountWorkspaceSearch(slotId){
+  var slot=document.getElementById(slotId);
+  var ws=document.getElementById('workspaceSearch');
+  if(slot&&ws&&ws.parentNode!==slot)slot.appendChild(ws);
+}
+
+function discoverHasResults(){
+  var r=document.getElementById('discoverResults');
+  return r&&r.style.display!=='none';
+}
+
+function syncTopBarLayout(){
+  var page=(document.querySelector('.panel.active')||{}).id||'panel-discover';
+  page=String(page).replace('panel-','');
+  var bar=document.getElementById('topBar');
+  var body=document.getElementById('discoverBody');
+  var qt=document.getElementById('quickTags');
+  if(page==='discover'){
+    if(discoverHasResults()){
+      if(bar){bar.classList.add('visible','discover-compact');}
+      mountWorkspaceSearch('topBarSearchSlot');
+      if(body)body.classList.add('has-results');
+      var hero=document.getElementById('discoverHero');
+      if(hero)hero.classList.add('compact');
+    }else{
+      if(bar)bar.classList.remove('visible','discover-compact');
+      mountWorkspaceSearch('heroSearchSlot');
+      if(body)body.classList.remove('has-results');
+      var hero2=document.getElementById('discoverHero');
+      if(hero2)hero2.classList.remove('compact');
+    }
+    if(qt)qt.style.display='flex';
+  }else if(page==='produce'){
+    if(bar){bar.classList.add('visible');bar.classList.remove('discover-compact');}
+    mountWorkspaceSearch('topBarSearchSlot');
+    if(qt)qt.style.display='none';
+  }else{
+    if(bar)bar.classList.remove('visible','discover-compact');
+    if(qt)qt.style.display='none';
+  }
+}
+
+function getProduceSourceLabel(){
+  if(selectedTopic)return selectedTopic.title;
+  var names=refFiles.filter(function(f){return f.status==='ok';}).map(function(f){return f.name;});
+  return names.length?names.join('、'):'外部资料';
+}
+
+function hasReadyRefFiles(){
+  return refFiles.some(function(f){return f.status==='ok'&&(f.text||f.b64);});
+}
+
+function hasProduceSource(){
+  return !!selectedTopic||hasReadyRefFiles();
+}
+
+function getProduceSourceType(){
+  if(selectedTopic)return 'paperstill';
+  if(hasReadyRefFiles())return 'external';
+  return null;
+}
+
+function getSourcePromptLabel(){
+  if(selectedTopic&&hasReadyRefFiles())return 'Paperstill论文摘要 + 上传补充资料';
+  if(selectedTopic)return 'Paperstill论文摘要';
+  return '外部上传资料';
+}
+
 function updateTopBar(page){
   page=page||(document.querySelector('.panel.active')||{}).id;
   page=page?String(page).replace('panel-',''):'discover';
-  var bar=document.getElementById('topBar');
-  var titleEl=document.getElementById('topBarTitle');
   var ctx=document.getElementById('topBarCtx');
-  var showBar=(page==='discover'||page==='produce');
-  if(bar)bar.style.display=showBar?'':'none';
-  if(!titleEl||!ctx)return;
-  if(page==='produce'&&selectedTopic){
-    titleEl.style.display='none';
-    ctx.style.display='flex';
-    document.getElementById('topBarSelTitle').textContent=selectedTopic.title;
-  }else{
-    titleEl.style.display='';
-    titleEl.textContent=page==='produce'?'分镜工作室':'今日选题';
-    ctx.style.display='none';
+  if(ctx){
+    if(page==='produce'&&hasProduceSource()){
+      ctx.style.display='flex';
+      document.getElementById('topBarSelTitle').textContent=getProduceSourceLabel();
+    }else{
+      ctx.style.display='none';
+    }
   }
-  if(page==='discover'&&document.getElementById('discoverHero').classList.contains('compact')){
-    titleEl.classList.add('compact');
-  }else{
-    titleEl.classList.remove('compact');
-  }
-  var qt=document.getElementById('quickTags');
-  if(qt)qt.style.display=page==='discover'?'flex':'none';
+  syncTopBarLayout();
 }
 var _searchStopped=false;
 function stopSearch(){
@@ -1639,6 +1764,7 @@ async function doSearch(){
   var q=document.getElementById('searchInput').value.trim();
   var isManual=q.length>0;
   document.getElementById('discoverResults').style.display='none';
+  syncTopBarLayout();
   document.getElementById('discoverLoading').style.display='block';
   setSearchRunning(true);
   _searchStopped=false;
@@ -1739,7 +1865,6 @@ async function doSearch(){
 
     stats=await getStats();
     renderTopics(allTopics,stats);
-    document.getElementById('discoverHero').classList.add('compact');
     updateTopBar('discover');
 
   }catch(e){
@@ -2045,7 +2170,10 @@ async function toggleFavorite(i,btn){
 }
 
 function selectTopic(i){
-  selectedTopic=window._topics[i];
+  var t=window._topics[i];
+  if(selectedTopic&&selectedTopic.title!==t.title)resetGen();
+  selectedTopic=t;
+  _produceSessionKey=t.title;
   document.querySelectorAll('.topic-card').forEach(function(el,j){el.classList.toggle('selected',j===i);});
   setTimeout(function(){nav('produce');},280);
 }
@@ -2109,7 +2237,10 @@ async function renderFavorites(){
 
 function selectFavorite(i){
   if(!window._favTopics||!window._favTopics[i])return;
-  selectedTopic=window._favTopics[i];
+  var t=window._favTopics[i];
+  if(selectedTopic&&selectedTopic.title!==t.title)resetGen();
+  selectedTopic=t;
+  _produceSessionKey=t.title;
   nav('produce');
 }
 
@@ -2130,7 +2261,7 @@ function showToast(msg){
    PRODUCE
 ═══════════════════════════════════════════ */
 function updateProduce(){
-  if(!selectedTopic){
+  if(!hasProduceSource()){
     document.getElementById('no-topic').style.display='flex';
     document.getElementById('produce-main').style.display='none';
     updateTopBar('produce');
@@ -2139,14 +2270,44 @@ function updateProduce(){
   document.getElementById('no-topic').style.display='none';
   document.getElementById('produce-main').style.display='block';
   var st=document.getElementById('selTitle');
-  if(st)st.textContent=selectedTopic.title;
+  renderProduceSourceBar();
+  if(st)st.textContent=getProduceSourceLabel();
   updateTopBar('produce');
   var sb=document.getElementById('safetyBox');
-  if(selectedTopic.safety_level==='warn')
+  if(selectedTopic&&selectedTopic.safety_level==='warn')
     sb.innerHTML='<div class="warn-box"><b>&#9888; 措辞提示已内嵌进生成指令</b></div>';
   else sb.innerHTML='';
-  switchPlatform('long');
-  resetGen();
+  var key=(selectedTopic?selectedTopic.title:'ext')+'|'+refFiles.filter(function(f){return f.status==='ok';}).map(function(f){return f.id;}).join(',');
+  if(key!==_produceSessionKey){
+    _produceSessionKey=key;
+    switchPlatform('long');
+  }else{
+    switchPlatform(activePlatform||'long');
+  }
+  renderPlatformToolbar();
+  renderStoryboardTable();
+  renderExportCards();
+  updateStudioOutputView();
+}
+function renderProduceSourceBar(){
+  var el=document.getElementById('produceSourceBar');
+  if(!el)return;
+  var chips=[];
+  if(selectedTopic)chips.push('<span class="src-chip paperstill">Paperstill论文 · '+escHtml(selectedTopic.title)+'</span>');
+  if(hasReadyRefFiles()){
+    var names=refFiles.filter(function(f){return f.status==='ok';}).map(function(f){return f.name;}).join('、');
+    chips.push('<span class="src-chip external">'+(selectedTopic?'补充资料 · ':'外部来源 · ')+escHtml(names)+'</span>');
+  }
+  el.innerHTML=chips.join('');
+}
+function startExternalProduce(){
+  selectedTopic=null;
+  nav('produce');
+  if(!hasReadyRefFiles()){
+    showToast('请先在顶栏 📎 上传资料');
+    var btn=document.getElementById('refAttachBtn');
+    if(btn)btn.click();
+  }
 }
 function resetGen(){
   resetBatch(1);resetBatch(2);
@@ -2191,14 +2352,16 @@ function updateRefUsedHint(){
   var el=document.getElementById('refUsedHint1');
   if(!el)return;
   var ref=buildRefContext();
-  var n=(window._topics||[]).length;
-  if(ref.textBlock||ref.imageBlocks.length){
-    var names=refFiles.filter(function(f){return f.status==='ok';}).map(function(f){return f.name;}).join('、');
+  var names=refFiles.filter(function(f){return f.status==='ok';}).map(function(f){return f.name;}).join('、');
+  if(selectedTopic&&(ref.textBlock||ref.imageBlocks.length)){
     el.style.display='block';
-    el.textContent='已注入: '+n+' 篇论文摘要'+(names?' + 资料: '+names:'');
-  }else if(n){
+    el.textContent='已注入: Paperstill论文摘要 + 补充资料: '+names;
+  }else if(selectedTopic){
     el.style.display='block';
-    el.textContent='已注入: '+n+' 篇论文摘要（未检测到上传资料，可在顶栏 📎 上传）';
+    el.textContent='已注入: Paperstill选题论文摘要（未检测到上传资料，可在顶栏 📎 添加补充）';
+  }else if(ref.textBlock||ref.imageBlocks.length){
+    el.style.display='block';
+    el.textContent='已注入: 外部来源资料 '+names;
   }else{
     el.style.display='none';
   }
@@ -2251,7 +2414,7 @@ function addRefFile(file){
   var entry={id:id,name:file.name,ext:ext,status:'loading',text:null,b64:null,mediaType:null};
   refFiles.push(entry);
   renderRefFiles();
-  extractFile(file,entry).then(function(){ renderRefFiles(); persistRefFiles(); }).catch(function(err){
+  extractFile(file,entry).then(function(){ renderRefFiles(); persistRefFiles(); if(hasReadyRefFiles())updateProduce(); }).catch(function(err){
     entry.status='err';entry.errMsg=err.message||'提取失败';renderRefFiles();
   });
 }
@@ -2364,6 +2527,7 @@ function renderRefFiles(){
       +'<button type="button" class="ref-chip-rm" onclick="removeRefFile(\''+f.id+'\')">✕</button>'
       +'</span>';
   }).join('');
+  if(document.getElementById('panel-produce')&&document.getElementById('panel-produce').classList.contains('active'))updateProduce();
 }
 
 function buildRefContext(){
@@ -2395,19 +2559,25 @@ function getDocStyle(){
 }
 
 function getTopicContext(refTextBlock){
-  var t=selectedTopic;
-  var srcAb=(t.srcPaper&&t.srcPaper.abstract)?'Source abstract: '+t.srcPaper.abstract:'';
-  var warnI=t.safety_level==='warn'?'IMPORTANT: This is preliminary/animal research. Never imply definitive human causation. Emphasize research stage clearly.':'';
-  var refSection=refTextBlock?'\n\n=== 用户专题补充资料 ===\n请将以下资料与 60 篇论文摘要库一并使用；有效信息自然融入分镜与旁白。如与某篇论文结论冲突，以该论文为准。\n\n'+refTextBlock+'\n=== 补充资料结束 ===\n':'';
-  return 'PRIMARY TOPIC (main storyline): '+t.title+'\nEnglish title: '+(t.english_title||'')+'\nPaper: '+(t.paper||'peer-reviewed research')+'\n'
-    +srcAb+'\n'+warnI+refSection
-    +buildSessionPapersContext()+'\n\n'
-    +'Anti-demotion rules:\n'
+  var refSection=refTextBlock?'\n\n=== 用户专题补充资料 ===\n请将以下资料融入分镜与旁白；如与论文结论冲突，以论文为准。\n\n'+refTextBlock+'\n=== 补充资料结束 ===\n':'';
+  var rules='Anti-demotion rules:\n'
     +'- Use "research found/suggests/indicates" framing only\n'
     +'- Never say cure/treat/proven effective\n'
     +'- Explicitly distinguish correlation from causation\n'
     +'- End with 1-3 practical actionable tips\n'
     +'- No specific drug dosages\n\n';
+  if(selectedTopic){
+    var t=selectedTopic;
+    var srcAb=(t.srcPaper&&t.srcPaper.abstract)?'Source abstract: '+t.srcPaper.abstract:'';
+    var warnI=t.safety_level==='warn'?'IMPORTANT: This is preliminary/animal research. Never imply definitive human causation. Emphasize research stage clearly.':'';
+    return 'PRIMARY TOPIC (main storyline): '+t.title+'\nEnglish title: '+(t.english_title||'')+'\nPaper: '+(t.paper||'peer-reviewed research')+'\n'
+      +srcAb+'\n'+warnI+refSection+buildSessionPapersContext()+'\n\n'+rules;
+  }
+  var names=refFiles.filter(function(f){return f.status==='ok';}).map(function(f){return f.name;}).join('、');
+  return 'CONTENT SOURCE: External production materials ('+names+') from tools outside Paperstill.\n'
+    +'No Paperstill paper/topic is selected. Build the full storyline, monologue, and storyboard from uploaded materials only.\n'
+    +'Do not use previous Paperstill search results or paper abstracts unless they are explicitly uploaded as files.\n'
+    +refSection+'\n\n'+rules;
 }
 
 /* ── STORYBOARD STUDIO v2.2 ── */
@@ -2735,11 +2905,13 @@ function updateRefUsedHintStudio(){
   var el=document.getElementById('refUsedHintStudio');
   if(!el)return;
   var ref=buildRefContext();
-  var n=(window._topics||[]).length;
-  if(ref.textBlock||ref.imageBlocks.length||n){
-    var names=refFiles.filter(function(f){return f.status==='ok';}).map(function(f){return f.name;}).join('、');
+  var names=refFiles.filter(function(f){return f.status==='ok';}).map(function(f){return f.name;}).join('、');
+  if(selectedTopic||ref.textBlock||ref.imageBlocks.length){
+    var src=selectedTopic?'Paperstill论文摘要':'外部来源资料';
+    if(selectedTopic&&names)src+=' + 补充资料: '+names;
+    else if(names)src+=': '+names;
     el.style.display='block';
-    el.textContent='已读入 '+n+' 篇摘要'+(names?' + '+names:'')+' → 生成 '+activePlatform;
+    el.textContent='已读入 '+src+' → 生成 '+activePlatform;
   }else el.style.display='none';
 }
 
@@ -2783,7 +2955,7 @@ function startTimer(subLineId,msgs,interval){
 }
 
 async function generateBatch1(){
-  if(!selectedTopic)return;
+  if(!hasProduceSource()){showToast('请先选择选题或上传资料');return;}
   var key=getApiKey();
   if(!key){showKeyModal();return;}
   activePlatform='long';
@@ -2793,7 +2965,8 @@ async function generateBatch1(){
   document.getElementById('genAreaStudio').style.display='none';
   document.getElementById('genLoadingStudio').style.display='block';
   document.getElementById('genStatusStudio').textContent='正在生成 YouTube 长视频分镜…';
-  var timer=startTimer('genSubLineStudio',['通读60篇摘要与专题资料…','规划章节结构…','撰写旁白…','设计画面分镜…','对齐目标时长 '+formatSec(ps.targetSec)+'…']);
+  var sourceLabel=getSourcePromptLabel();
+  var timer=startTimer('genSubLineStudio',['读取'+sourceLabel+'…','规划章节结构…','撰写独白…','设计画面分镜…','对齐目标时长 '+formatSec(ps.targetSec)+'…']);
   var ref=buildRefContext();
   var msg=getTopicContext(ref.textBlock)
     +'PLATFORM: YouTube long-form, 16:9, target duration ~'+ps.targetSec+' seconds (~'+formatSec(ps.targetSec)+').\n\n'
@@ -2834,7 +3007,7 @@ async function generateBatch1(){
 }
 
 async function generateBatch2(){
-  if(!selectedTopic)return;
+  if(!hasProduceSource()){showToast('请先选择选题或上传资料');return;}
   var key=getApiKey();
   if(!key){showKeyModal();return;}
   activePlatform='short';
@@ -2845,7 +3018,8 @@ async function generateBatch2(){
   document.getElementById('genLoadingStudio').style.display='block';
   document.getElementById('genStatusStudio').textContent='正在生成 TikTok / Shorts 分镜…';
   var plats=(ps.platforms||['tiktok','shorts']).join(' + ');
-  var timer=startTimer('genSubLineStudio',['3秒钩子…','压缩口播至 '+ps.targetSec+' 秒…','竖屏画面…','屏幕字幕…','配图提示词…']);
+  var sourceLabel=getSourcePromptLabel();
+  var timer=startTimer('genSubLineStudio',['读取'+sourceLabel+'…','3秒钩子…','压缩口播至 '+ps.targetSec+' 秒…','竖屏画面…','屏幕字幕…']);
   var ref=buildRefContext();
   var msg=getTopicContext(ref.textBlock)
     +'PLATFORM: vertical 9:16 for '+plats+', total ~'+ps.targetSec+' seconds. Strongest hook in first 3 seconds.\n\n'
@@ -2929,18 +3103,42 @@ function copyOutput(n){
 /* ═══════════════════════════════════════════
    PUBLISH CHECKLIST
 ═══════════════════════════════════════════ */
+var PUB_SECTIONS=[
+  {id:'prep',title:'📝 脚本与合规',open:true,items:CL.slice(0,4)},
+  {id:'av',title:'🎙 素材制作',open:false,items:CL.slice(4,7)},
+  {id:'long',title:'▶ YouTube 长视频',open:true,dynamic:'long'},
+  {id:'short',title:'📱 TikTok / Shorts',open:false,dynamic:'short'},
+  {id:'ship',title:'🚀 发布上线',open:false,items:CL.slice(7)}
+];
+function buildPlatformPubBlock(platform){
+  var shots=storyboards[platform]||[],out=platformOutputs[platform]||'';
+  var sec=shots.reduce(function(a,s){return a+(parseInt(s.dur,10)||0);},0);
+  if(!shots.length&&!out)return '<p class="pub-dynamic"><b>未生成</b> — <button type="button" onclick="nav(\'produce\')">去分镜工作室</button></p>';
+  return '<p class="pub-dynamic"><b>'+shots.length+'镜 · '+formatSec(sec)+'</b> '
+    +'<button type="button" onclick="nav(\'produce\');switchPlatform(\''+platform+'\')">编辑</button> '
+    +(platform==='long'?'<button type="button" onclick="exportYouTubePack()">YouTube包</button>':'<button type="button" onclick="exportShortsPack()">Shorts包</button>')
+    +'</p>';
+}
 function buildChecklist(){
-  checkState={};
-  document.getElementById('checklistEl').innerHTML=CL.map(function(item){
-    return '<div class="check-item" id="ci_'+item.id+'" onclick="toggleCheck(\''+item.id+'\')"><div class="chk-box" id="cb_'+item.id+'"></div><div><div class="chk-label">'+item.l+'</div><div class="chk-desc">'+item.d+'</div></div></div>';
-  }).join('');
-  updProg();
-  document.getElementById('pubSuccess').style.display='none';
+  stGet(SK_CHECK).then(function(saved){
+    checkState=saved||{};
+    document.getElementById('checklistEl').innerHTML=PUB_SECTIONS.map(function(sec){
+      var body=sec.dynamic?buildPlatformPubBlock(sec.dynamic):(sec.items||[]).map(function(item){
+        return '<div class="check-item'+(checkState[item.id]?' done':'')+'" id="ci_'+item.id+'" onclick="toggleCheck(\''+item.id+'\')"><div class="chk-box" id="cb_'+item.id+'">'+(checkState[item.id]?'✓':'')+'</div><div><div class="chk-label">'+item.l+'</div><div class="chk-desc">'+item.d+'</div></div></div>';
+      }).join('');
+      var dn=0,tn=sec.items?sec.items.length:0;
+      if(sec.items)dn=sec.items.filter(function(it){return checkState[it.id];}).length;
+      return '<details class="pub-section"'+(sec.open?' open':'')+'><summary>'+sec.title+' <span class="pub-sec-prog">'+(tn?dn+'/'+tn:'')+'</span></summary><div class="pub-section-body">'+body+'</div></details>';
+    }).join('');
+    updProg();
+    document.getElementById('pubSuccess').style.display='none';
+  });
 }
 function toggleCheck(id){
   checkState[id]=!checkState[id];
   document.getElementById('ci_'+id).classList.toggle('done',!!checkState[id]);
   document.getElementById('cb_'+id).textContent=checkState[id]?'✓':'';
+  stSet(SK_CHECK,checkState);
   updProg();
 }
 function updProg(){
@@ -2951,19 +3149,23 @@ function updProg(){
 }
 function newContent(){
   selectedTopic=null;outputFull='';checkState={};window._topics=[];
-  document.getElementById('discoverHero').classList.remove('compact');
   document.getElementById('discoverResults').style.display='none';
+  _produceSessionKey='';
   document.getElementById('discoverLoading').style.display='none';
   document.getElementById('searchInput').value='';
   nav('discover');
+  syncTopBarLayout();
 }
 
 /* ═══════════════════════════════════════════
    INIT
 ═══════════════════════════════════════════ */
 initTags();buildChecklist();updateKeyStatus();initAppVersion();
-updateTopBar('discover');switchPlatform('long');
-loadPersistedRefFiles();
+mountWorkspaceSearch('heroSearchSlot');
+updateTopBar('discover');
+loadPersistedRefFiles().then(function(){
+  if(hasReadyRefFiles()&&document.getElementById('panel-produce').classList.contains('active'))updateProduce();
+});
 
 </script>
 </body>
