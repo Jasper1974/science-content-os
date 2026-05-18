@@ -1,9 +1,10 @@
 <!DOCTYPE html>
 <html lang="zh">
 <head>
+<!-- Paperstill index.html v2.2.0 · 2026-05-18 · 保存时请重命名为 index-v2.2.0.html 便于回溯 -->
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
-<title>Paperstill</title>
+<title>Paperstill v2.2.0</title>
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Mono:wght@400;500&family=Noto+Sans+SC:wght@400;500;700&display=swap');
 
@@ -302,6 +303,140 @@ body {
 .gen-step-block { margin-bottom: 18px; }
 .gen-step-block.step-done .gen-step-hdr { border-bottom-color: #22c55e40; }
 .gen-step-block.step-done .gen-lbl::after { content: ' ✓'; color: var(--green); font-size: 12px; }
+
+.storyboard-panel {
+  margin-top: 14px; background: var(--surface); border: 1px solid var(--border);
+  border-radius: 14px; padding: 14px 16px 16px;
+}
+.sb-hdr {
+  display: flex; align-items: center; justify-content: space-between;
+  gap: 10px; flex-wrap: wrap; margin-bottom: 12px;
+}
+.sb-hdr-title { font-size: 14px; font-weight: 700; color: var(--teal); }
+.sb-hdr-actions { display: flex; flex-wrap: wrap; gap: 6px; }
+.sb-hdr-actions button {
+  padding: 5px 10px; border-radius: 8px; border: 1px solid var(--border2);
+  background: var(--surface2); color: var(--text2); font-size: 11px;
+  font-weight: 600; cursor: pointer; font-family: 'Syne', sans-serif;
+}
+.sb-hdr-actions button:hover { border-color: var(--accent); color: var(--text); }
+.sb-table-wrap { overflow-x: auto; max-height: 48vh; overflow-y: auto; }
+.sb-table {
+  width: 100%; border-collapse: collapse; font-size: 12px;
+}
+.sb-table th {
+  text-align: left; padding: 8px 10px; color: var(--text3);
+  font-family: 'DM Mono', monospace; font-size: 10px;
+  border-bottom: 1px solid var(--border); position: sticky; top: 0;
+  background: var(--surface); z-index: 1;
+}
+.sb-table td { padding: 8px 10px; border-bottom: 1px solid var(--border); vertical-align: top; }
+.sb-table tr:hover td { background: var(--surface2); }
+.sb-table input, .sb-table textarea {
+  width: 100%; background: var(--bg); border: 1px solid var(--border);
+  border-radius: 6px; color: var(--text); font-size: 12px; padding: 6px 8px;
+  font-family: 'Syne', 'Noto Sans SC', sans-serif; outline: none;
+}
+.sb-table textarea { min-height: 52px; resize: vertical; line-height: 1.5; }
+.sb-no { width: 36px; text-align: center; color: var(--text3); font-family: 'DM Mono', monospace; }
+.sb-dur { width: 52px; }
+.sb-ops { width: 72px; white-space: nowrap; }
+.sb-ops button {
+  background: none; border: none; color: var(--text3); cursor: pointer;
+  font-size: 14px; padding: 2px 4px;
+}
+.sb-ops button:hover { color: var(--accent); }
+.sb-total { margin-top: 10px; font-size: 11px; color: var(--text2); font-family: 'DM Mono', monospace; }
+.ref-used-hint {
+  font-size: 11px; color: var(--teal); margin-top: 6px; font-family: 'DM Mono', monospace;
+}
+.app-ver-pill {
+  font-size: 10px; font-weight: 600; color: var(--text3);
+  font-family: 'DM Mono', monospace; vertical-align: middle;
+  padding: 2px 8px; border: 1px solid var(--border); border-radius: 20px; margin-left: 8px;
+}
+
+/* ── PRODUCE STUDIO (YouTube / TikTok·Shorts) ── */
+.produce-studio { margin-top: 8px; }
+.platform-tabs {
+  display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 14px;
+}
+.platform-tab {
+  display: flex; flex-direction: column; align-items: flex-start; gap: 2px;
+  padding: 14px 16px; border-radius: 12px; border: 1.5px solid var(--border);
+  background: var(--surface2); cursor: pointer; text-align: left;
+  transition: all 0.2s; font-family: 'Syne', 'Noto Sans SC', sans-serif;
+}
+.platform-tab:hover { border-color: var(--border2); background: var(--surface); }
+.platform-tab.active { border-color: var(--accent); background: #7c6cfc12; box-shadow: 0 0 0 1px #7c6cfc30; }
+.platform-tab.active .pt-label { color: var(--accent); }
+.pt-label { font-size: 15px; font-weight: 800; color: var(--text); }
+.pt-sub { font-size: 11px; color: var(--text2); font-family: 'DM Mono', monospace; }
+.pt-badge {
+  font-size: 9px; padding: 2px 6px; border-radius: 4px; margin-top: 4px;
+  background: var(--bg); border: 1px solid var(--border); color: var(--text3);
+  font-family: 'DM Mono', monospace;
+}
+.platform-tab.active .pt-badge { border-color: #7c6cfc44; color: var(--accent); }
+
+.platform-toolbar {
+  background: var(--surface); border: 1px solid var(--border); border-radius: 12px;
+  padding: 14px 16px; margin-bottom: 14px;
+}
+.pt-row { display: flex; flex-wrap: wrap; align-items: center; gap: 12px 16px; margin-bottom: 10px; }
+.pt-row:last-child { margin-bottom: 0; }
+.pt-lbl { font-size: 10px; color: var(--text3); font-family: 'DM Mono', monospace; min-width: 56px; }
+.pt-val { font-size: 13px; font-weight: 700; color: var(--teal); font-family: 'DM Mono', monospace; min-width: 48px; }
+.pt-slider { flex: 1; min-width: 120px; max-width: 280px; accent-color: var(--accent); }
+.pt-chips { display: flex; flex-wrap: wrap; gap: 6px; }
+.pt-chip {
+  padding: 5px 11px; border-radius: 20px; border: 1px solid var(--border2);
+  background: var(--bg); color: var(--text2); font-size: 11px; font-weight: 600;
+  cursor: pointer; transition: all 0.15s;
+}
+.pt-chip:hover { border-color: var(--accent); color: var(--text); }
+.pt-chip.active { background: var(--accent-glow); border-color: var(--accent); color: var(--accent); }
+
+.studio-layout {
+  display: grid; grid-template-columns: 1fr 280px; gap: 14px; align-items: start;
+}
+@media(max-width: 1100px) { .studio-layout { grid-template-columns: 1fr; } }
+.studio-aside {
+  background: var(--surface); border: 1px solid var(--border); border-radius: 14px;
+  padding: 14px; position: sticky; top: 80px;
+}
+.aside-title { font-size: 12px; font-weight: 700; color: var(--text2); margin-bottom: 10px; }
+.timeline-bar {
+  display: flex; height: 8px; border-radius: 4px; overflow: hidden;
+  background: var(--bg); margin-bottom: 8px;
+}
+.timeline-seg { height: 100%; min-width: 2px; transition: width 0.2s; }
+.export-card {
+  border: 1px solid var(--border); border-radius: 10px; padding: 12px;
+  margin-bottom: 8px; background: var(--surface2);
+}
+.export-card h4 { font-size: 12px; font-weight: 700; margin-bottom: 4px; }
+.export-card p { font-size: 11px; color: var(--text2); line-height: 1.5; margin-bottom: 8px; }
+.export-card button {
+  width: 100%; padding: 8px; border-radius: 8px; border: none;
+  background: var(--accent); color: #fff; font-size: 12px; font-weight: 700;
+  cursor: pointer; font-family: 'Syne', sans-serif;
+}
+.export-card button.secondary { background: var(--surface); border: 1px solid var(--border2); color: var(--text2); margin-top: 6px; }
+.script-collapse {
+  margin-top: 10px; border: 1px solid var(--border); border-radius: 10px; overflow: hidden;
+}
+.script-collapse summary {
+  padding: 10px 14px; cursor: pointer; font-size: 12px; font-weight: 600;
+  color: var(--text2); background: var(--surface2); list-style: none;
+}
+.script-collapse summary::-webkit-details-marker { display: none; }
+.script-collapse .output-box { max-height: 28vh; border: none; border-radius: 0; }
+.sb-status-select {
+  width: 100%; background: var(--bg); border: 1px solid var(--border);
+  border-radius: 6px; color: var(--text); font-size: 11px; padding: 4px;
+}
+.sb-type-tag { font-size: 9px; padding: 2px 5px; border-radius: 4px; background: var(--bg); color: var(--text3); }
 .gen-tags { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 18px; }
 
 /* File Upload */
@@ -484,6 +619,7 @@ body {
     <span class="nav-icon">⭐</span> 收藏夹
   </button>
   <div class="sidebar-footer">
+    <span id="appVersion" style="display:block;margin-bottom:6px;color:var(--text3)"></span>
     <span id="keyStatus" style="color:var(--red)">⚠ 未设置API Key</span><br>
     <button onclick="showKeyModal()" style="margin-top:6px;padding:4px 10px;background:var(--surface2);border:1px solid var(--border2);border-radius:6px;color:var(--text2);font-size:11px;cursor:pointer;width:100%">设置 API Key</button>
   </div>
@@ -581,21 +717,77 @@ body {
       <button class="btn-primary" onclick="nav('discover')">← 去选题</button>
     </div>
     <div class="produce-wrap" id="produce-main" style="display:none">
-      <div class="panel-title">内容生产</div>
-      <div class="selected-bar">
-        <div>
-          <div class="sb-lbl">当前选题</div>
-          <div class="sb-title" id="selTitle">—</div>
-        </div>
-        <button class="btn-secondary" onclick="nav('discover')" style="padding:8px 14px;font-size:12px">换题材</button>
-      </div>
+      <div class="panel-title">分镜工作室 <span class="app-ver-pill" id="panelVersionPill"></span></div>
+      <div class="selected-bar" style="display:none"><div class="sb-title" id="selTitle">—</div></div>
       <div id="safetyBox"></div>
 
+      <div class="produce-studio" id="produceStudio">
+        <div class="platform-tabs">
+          <button type="button" class="platform-tab active" id="tab-long" onclick="switchPlatform('long')">
+            <span class="pt-label">长视频线</span>
+            <span class="pt-sub">YouTube · 横屏 16:9</span>
+            <span class="pt-badge">10–20 分钟 · 章节时间轴</span>
+          </button>
+          <button type="button" class="platform-tab" id="tab-short" onclick="switchPlatform('short')">
+            <span class="pt-label">短视频线</span>
+            <span class="pt-sub">TikTok · YouTube Shorts</span>
+            <span class="pt-badge">竖屏 9:16 · 15–90 秒</span>
+          </button>
+        </div>
+        <div class="platform-toolbar" id="platformToolbar"></div>
+        <div class="studio-layout">
+          <div class="studio-main">
+            <div id="genAreaStudio">
+              <button type="button" class="btn-primary full" id="genBtnStudio" onclick="generateActivePlatform()">✦ 生成分镜 + 旁白</button>
+              <div id="refUsedHintStudio" class="ref-used-hint" style="display:none;margin-top:8px"></div>
+            </div>
+            <div id="genLoadingStudio" style="display:none">
+              <div class="gen-indicator">
+                <div class="gen-icon-wrap"><div class="gen-ring"></div><div class="gen-ring-2"></div><div class="gen-core"></div></div>
+                <div class="gen-text-col">
+                  <div class="gen-status-line" id="genStatusStudio">正在生成…</div>
+                  <div class="gen-sub-line" id="genSubLineStudio">读取 60 篇摘要与上传资料…</div>
+                </div>
+              </div>
+            </div>
+            <div id="storyboardPanelStudio" class="storyboard-panel">
+              <div class="sb-hdr">
+                <span class="sb-hdr-title" id="storyboardTitle">分镜表</span>
+                <div class="sb-hdr-actions">
+                  <button type="button" onclick="parseStoryboardFromOutput()">从文稿解析</button>
+                  <button type="button" onclick="addStoryboardRow()">+ 镜头</button>
+                  <button type="button" onclick="exportStoryboardNarration()">旁白稿</button>
+                  <button type="button" onclick="exportStoryboardTable()">分镜 CSV</button>
+                </div>
+              </div>
+              <div class="sb-table-wrap" id="storyboardTableWrapStudio"></div>
+              <div class="sb-total" id="storyboardTotalStudio"></div>
+            </div>
+            <details class="script-collapse" id="scriptCollapse">
+              <summary>完整 AI 文稿（可折叠）</summary>
+              <div class="out-hdr" style="padding:8px 14px 0">
+                <span style="font-size:12px;color:var(--text2)" id="wordCountStudio"></span>
+                <button type="button" class="copy-btn" onclick="copyStudioOutput()">复制</button>
+                <button type="button" class="copy-btn" id="btnResetStudio" style="display:none" onclick="resetActivePlatform()">重新生成</button>
+              </div>
+              <div class="output-box" id="outputBoxStudio"></div>
+            </details>
+          </div>
+          <aside class="studio-aside">
+            <div class="aside-title">发布助手</div>
+            <div class="timeline-bar" id="timelineBar"></div>
+            <div class="sb-total" id="timelineMeta" style="margin-bottom:12px"></div>
+            <div id="exportCardsStudio"></div>
+          </aside>
+        </div>
+      </div>
+
+      <div id="legacyProduce" style="display:none">
       <!-- BATCH 1: YouTube scripts -->
       <div class="gen-step-block" id="stepBlock1">
         <div class="gen-step-hdr">
-          <span class="gen-lbl">第一步</span>
-          <span class="gen-step-meta">YouTube 中文 / English 8-10min</span>
+          <span class="gen-lbl">长视频线</span>
+          <span class="gen-step-meta">分镜表 + 旁白 · 10-20min · 16:9（综合 60 篇摘要 + 上传资料）</span>
           <button type="button" class="gen-step-reset" id="stepReset1" style="display:none" onclick="resetBatch(1)">重新生成</button>
         </div>
         <div id="genArea1">
@@ -604,7 +796,7 @@ body {
             <span class="badge" style="border-color:#7c6cfc40;color:var(--accent)">YouTube 中文 8-10min</span>
             <span class="badge" style="border-color:#4fd1c540;color:var(--teal)">YouTube English 8-10min</span>
           </div>
-            <button class="btn-primary full" id="genBtn1" onclick="generateBatch1()">✦ 生成 YouTube 脚本</button>
+            <button class="btn-primary full" id="genBtn1" onclick="generateBatch1()">✦ 生成分镜表 + 旁白</button>
           </div>
         </div>
       </div>
@@ -623,13 +815,27 @@ body {
           <button class="copy-btn" id="copyBtn1" onclick="copyOutput(1)">复制</button>
         </div>
         <div class="output-box" id="outputBox1"></div>
+        <div id="refUsedHint1" class="ref-used-hint" style="display:none"></div>
+      </div>
+      <div id="storyboardPanel" class="storyboard-panel" style="display:none">
+        <div class="sb-hdr">
+          <span class="sb-hdr-title">分镜管理</span>
+          <div class="sb-hdr-actions">
+            <button type="button" onclick="parseStoryboardFromOutput()">从文稿解析</button>
+            <button type="button" onclick="addStoryboardRow()">+ 镜头</button>
+            <button type="button" onclick="exportStoryboardNarration()">导出旁白稿</button>
+            <button type="button" onclick="exportStoryboardTable()">复制分镜表</button>
+          </div>
+        </div>
+        <div class="sb-table-wrap" id="storyboardTableWrap"></div>
+        <div class="sb-total" id="storyboardTotal"></div>
       </div>
 
       <!-- BATCH 2: TikTok + images -->
       <div class="gen-step-block" id="stepBlock2" style="margin-top:12px">
         <div class="gen-step-hdr">
-          <span class="gen-lbl">第二步</span>
-          <span class="gen-step-meta">TikTok 中文 / English 60s · 配图提示词 ×3</span>
+          <span class="gen-lbl">短视频线</span>
+          <span class="gen-step-meta">TikTok / Shorts · 60s · 配图（沿用长视频分镜结论）</span>
           <button type="button" class="gen-step-reset" id="stepReset2" style="display:none" onclick="resetBatch(2)">重新生成</button>
         </div>
         <div id="genArea2">
@@ -658,6 +864,7 @@ body {
           <button class="copy-btn" id="copyBtn2" onclick="copyOutput(2)">复制</button>
         </div>
         <div class="output-box" id="outputBox2"></div>
+      </div>
       </div>
 
       <div id="publishRow" style="display:none;margin-top:16px">
@@ -712,8 +919,17 @@ body {
    STATE
 ═══════════════════════════════════════════ */
 var selectedTopic=null,outputFull='',checkState={};
-var SK_STATE='crawl_state2',SK_PAPERS='paper_db2',SK_SCORED='scored_db2';
+var SK_STATE='crawl_state2',SK_PAPERS='paper_db2',SK_SCORED='scored_db2',SK_REF='ref_files_v1';
 var SCORE_N=60,FETCH_N=60,CRAWL_DIRS_N=20;
+var APP_VERSION='2.2.0';
+var APP_BUILD='2026-05-18';
+var activePlatform='long';
+var storyboards={long:[],short:[]};
+var platformOutputs={long:'',short:''};
+var platformSettings={
+  long:{targetSec:600,strategy:'youtube-10-15',lang:'zh',bilingual:false},
+  short:{targetSec:60,strategy:'tiktok-hook',lang:'zh',platforms:['tiktok','shorts']}
+};
 var ALL_DIRS=[
   /* ── 死亡恐惧·最强痛点 ── */
   'cancer prevention reversal new mechanism 2024 2025',
@@ -860,7 +1076,7 @@ function updateTopBar(page){
     document.getElementById('topBarSelTitle').textContent=selectedTopic.title;
   }else{
     titleEl.style.display='';
-    titleEl.textContent=page==='produce'?'内容生产':'今日选题';
+    titleEl.textContent=page==='produce'?'分镜工作室':'今日选题';
     ctx.style.display='none';
   }
   if(page==='discover'&&document.getElementById('discoverHero').classList.contains('compact')){
@@ -1472,7 +1688,9 @@ async function doSearch(){
     /* Phase 2: score */
     var stats=await getStats();
     dbg('stats: total='+stats.total+' scored='+stats.scored+' unscored='+stats.unscored);
-    setMsg('AI评分中...','库存'+stats.total+'篇 未评'+stats.unscored+'篇');
+    var refActive=!!getRefPromptSection('score');
+    setMsg('AI评分中...','库存'+stats.total+'篇 未评'+stats.unscored+'篇'+(refActive?' · 已含上传资料':''));
+    if(refActive)dbg('scoreNextBatch will include uploaded ref files');
 
     var allTopics=[];
     var batchNum=0;
@@ -1604,7 +1822,8 @@ async function scoreNextBatch(papers){
     +'BAD:  "微塑料危害研究" "睡眠与健康关系" "癌症新发现" "肠道菌群综述"\n\n'
     +'Output format - one line per paper (ALL papers):\n'
     +'TOPIC|Chinese headline max 24 chars|English title|triggers|Journal Year|TotalScore|PersonalStakes|HopeAction|Extremity|Urgency|VividNumbers|EvidenceQuality|TopicRarity|CategoryKeyword|safe or warn|PaperNumber\n\n'
-    +'PAPERS:\n'+paperList;
+    +'PAPERS:\n'+paperList
+    +getRefPromptSection('score');
 
   try{
     var text=await callClaude(sys,prompt,3000);
@@ -1926,19 +2145,81 @@ function updateProduce(){
   if(selectedTopic.safety_level==='warn')
     sb.innerHTML='<div class="warn-box"><b>&#9888; 措辞提示已内嵌进生成指令</b></div>';
   else sb.innerHTML='';
+  switchPlatform('long');
   resetGen();
 }
 function resetGen(){
-  refFiles=[];
-  renderRefFiles();
   resetBatch(1);resetBatch(2);
+  storyboards={long:[],short:[]};
+  platformOutputs={long:'',short:''};
+  resetStoryboard();
+  renderPlatformToolbar();
+  renderExportCards();
+  updateStudioOutputView();
   document.getElementById('publishRow').style.display='none';
   outputFull='';
 }
 /* ═══════════════════════════════════════════
    REFERENCE FILES
 ═══════════════════════════════════════════ */
-var refFiles=[];  // [{name, type, text?, b64?, mediaType?, status}]
+var refFiles=[];  // [{id,name,ext,text?,b64?,mediaType?,status}]
+
+function getRefPromptSection(mode){
+  var ref=buildRefContext();
+  if(!ref.textBlock&&!ref.imageBlocks.length)return '';
+  var head='\n\n=== 用户专题补充资料（与本轮方向一致，用于补充框架/数据/叙事，不得编造文中没有的事实）===\n';
+  if(mode==='score'){
+    head='\n\n=== 用户专题补充资料（评分时请结合此资料理解系列主题；每条 TOPIC 仍必须对应下方 PAPERS 中唯一一篇论文）===\n';
+  }
+  var imgNote=ref.imageBlocks.length?'\n[用户另上传 '+ref.imageBlocks.length+' 张参考图，生成阶段将送入视觉模型]\n':'';
+  return head+(ref.textBlock||'(仅图片资料，见生产阶段)')+imgNote+'\n=== 补充资料结束 ===\n';
+}
+
+function buildSessionPapersContext(){
+  var topics=window._topics||[];
+  if(!topics.length)return '';
+  var lines=topics.map(function(t,i){
+    var p=t.srcPaper||{};
+    var ab=(p.abstract||'').replace(/\s+/g,' ').slice(0,450);
+    return '['+(i+1)+'] 选题: '+t.title+' | 论文: '+(p.title||t.paper||'')+' | 摘要: '+ab;
+  });
+  return '\n\n=== 本轮已评分的 '+topics.length+' 篇论文摘要库（请通读后再写分镜；以当前选定主题为干线，可引用其他条目的数据）===\n'
+    +lines.join('\n---\n')+'\n=== 论文库结束 ===\n';
+}
+
+function updateRefUsedHint(){
+  var el=document.getElementById('refUsedHint1');
+  if(!el)return;
+  var ref=buildRefContext();
+  var n=(window._topics||[]).length;
+  if(ref.textBlock||ref.imageBlocks.length){
+    var names=refFiles.filter(function(f){return f.status==='ok';}).map(function(f){return f.name;}).join('、');
+    el.style.display='block';
+    el.textContent='已注入: '+n+' 篇论文摘要'+(names?' + 资料: '+names:'');
+  }else if(n){
+    el.style.display='block';
+    el.textContent='已注入: '+n+' 篇论文摘要（未检测到上传资料，可在顶栏 📎 上传）';
+  }else{
+    el.style.display='none';
+  }
+}
+
+async function persistRefFiles(){
+  var payload=refFiles.filter(function(f){return f.status==='ok'&&(f.text||f.b64);}).map(function(f){
+    return {id:f.id,name:f.name,ext:f.ext,text:f.text||null,hasImage:!!f.b64};
+  });
+  await stSet(SK_REF,payload);
+}
+
+async function loadPersistedRefFiles(){
+  var payload=await stGet(SK_REF);
+  if(!payload||!payload.length)return;
+  refFiles=payload.map(function(f){
+    return {id:f.id,name:f.name,ext:f.ext,text:f.text,status:'ok',b64:null,mediaType:null};
+  });
+  renderRefFiles();
+  if(payload.some(function(f){return f.hasImage;}))showToast('文本资料已恢复；图片请重新上传');
+}
 
 var FILE_ICONS={pdf:'📄',doc:'📝',docx:'📝',txt:'📃',md:'📋',mmd:'🗺',mermaid:'🗺',png:'🖼',jpg:'🖼',jpeg:'🖼',webp:'🖼',gif:'🖼'};
 var IMAGE_TYPES=['png','jpg','jpeg','webp','gif'];
@@ -1970,7 +2251,7 @@ function addRefFile(file){
   var entry={id:id,name:file.name,ext:ext,status:'loading',text:null,b64:null,mediaType:null};
   refFiles.push(entry);
   renderRefFiles();
-  extractFile(file,entry).then(function(){ renderRefFiles(); }).catch(function(err){
+  extractFile(file,entry).then(function(){ renderRefFiles(); persistRefFiles(); }).catch(function(err){
     entry.status='err';entry.errMsg=err.message||'提取失败';renderRefFiles();
   });
 }
@@ -2063,6 +2344,7 @@ function loadScript(src){
 function removeRefFile(id){
   refFiles=refFiles.filter(function(f){return f.id!==id;});
   renderRefFiles();
+  persistRefFiles();
 }
 
 function renderRefFiles(){
@@ -2116,15 +2398,379 @@ function getTopicContext(refTextBlock){
   var t=selectedTopic;
   var srcAb=(t.srcPaper&&t.srcPaper.abstract)?'Source abstract: '+t.srcPaper.abstract:'';
   var warnI=t.safety_level==='warn'?'IMPORTANT: This is preliminary/animal research. Never imply definitive human causation. Emphasize research stage clearly.':'';
-  var refSection=refTextBlock?'\n\n=== 用户提供的背景参考资料 ===\n请将以下资料中的有效信息（数据、案例、机制补充、专家观点等）自然融入脚本，丰富内容深度。如资料与论文结论有冲突，以论文为准。\n\n'+refTextBlock+'\n=== 参考资料结束 ===\n':'';
-  return 'Topic: '+t.title+'\nEnglish title: '+(t.english_title||'')+'\nPaper: '+(t.paper||'peer-reviewed research')+'\n'
-    +srcAb+'\n'+warnI+refSection+'\n\n'
+  var refSection=refTextBlock?'\n\n=== 用户专题补充资料 ===\n请将以下资料与 60 篇论文摘要库一并使用；有效信息自然融入分镜与旁白。如与某篇论文结论冲突，以该论文为准。\n\n'+refTextBlock+'\n=== 补充资料结束 ===\n':'';
+  return 'PRIMARY TOPIC (main storyline): '+t.title+'\nEnglish title: '+(t.english_title||'')+'\nPaper: '+(t.paper||'peer-reviewed research')+'\n'
+    +srcAb+'\n'+warnI+refSection
+    +buildSessionPapersContext()+'\n\n'
     +'Anti-demotion rules:\n'
     +'- Use "research found/suggests/indicates" framing only\n'
     +'- Never say cure/treat/proven effective\n'
     +'- Explicitly distinguish correlation from causation\n'
     +'- End with 1-3 practical actionable tips\n'
     +'- No specific drug dosages\n\n';
+}
+
+/* ── STORYBOARD STUDIO v2.2 ── */
+function getActiveShots(){return storyboards[activePlatform]||[];}
+function setActiveShots(shots){storyboards[activePlatform]=shots||[];}
+
+function initAppVersion(){
+  var label='v'+APP_VERSION+' · '+APP_BUILD;
+  var el=document.getElementById('appVersion');
+  if(el)el.textContent=label;
+  var p=document.getElementById('panelVersionPill');
+  if(p)p.textContent=APP_VERSION;
+}
+
+function switchPlatform(p){
+  activePlatform=p;
+  var tl=document.getElementById('tab-long');
+  var ts=document.getElementById('tab-short');
+  if(tl)tl.classList.toggle('active',p==='long');
+  if(ts)ts.classList.toggle('active',p==='short');
+  renderPlatformToolbar();
+  renderStoryboardTable();
+  renderExportCards();
+  updateStudioOutputView();
+  var btn=document.getElementById('genBtnStudio');
+  if(btn)btn.textContent=p==='long'?'✦ 生成长视频分镜 + 旁白':'✦ 生成短视频分镜 + 旁白';
+  var title=document.getElementById('storyboardTitle');
+  if(title)title.textContent=p==='long'?'YouTube 分镜表 · 16:9':'TikTok / Shorts 分镜表 · 9:16';
+}
+
+function formatSec(sec){
+  sec=parseInt(sec,10)||0;
+  var m=Math.floor(sec/60),s=sec%60;
+  return m+':'+(s<10?'0':'')+s;
+}
+
+function setPlatformSetting(key,val){
+  if(!platformSettings[activePlatform])return;
+  platformSettings[activePlatform][key]=val;
+  if(key==='targetSec')renderPlatformToolbar();
+  renderExportCards();
+}
+
+function renderPlatformToolbar(){
+  var tb=document.getElementById('platformToolbar');
+  if(!tb)return;
+  var s=platformSettings[activePlatform];
+  if(activePlatform==='long'){
+    tb.innerHTML='<div class="pt-row"><span class="pt-lbl">目标时长</span>'
+      +'<input type="range" class="pt-slider" min="480" max="1200" step="60" value="'+s.targetSec+'" oninput="setPlatformSetting(\'targetSec\',parseInt(this.value,10));document.getElementById(\'ptDurVal\').textContent=formatSec(this.value)">'
+      +'<span class="pt-val" id="ptDurVal">'+formatSec(s.targetSec)+'</span></div>'
+      +'<div class="pt-row"><span class="pt-lbl">策略</span><div class="pt-chips">'
+      +['youtube-8-10','youtube-10-15','youtube-deep'].map(function(k){
+        var labels={'youtube-8-10':'8-10 分钟','youtube-10-15':'10-15 分钟','youtube-deep':'深度科普'};
+        return '<button type="button" class="pt-chip'+(s.strategy===k?' active':'')+'" onclick="setPlatformSetting(\'strategy\',\''+k+'\');renderPlatformToolbar()">'+labels[k]+'</button>';
+      }).join('')+'</div></div>'
+      +'<div class="pt-row"><span class="pt-lbl">画幅</span><span class="pt-val">16:9 横屏 · YouTube</span></div>';
+  }else{
+    var durs=[15,30,45,60,90];
+    tb.innerHTML='<div class="pt-row"><span class="pt-lbl">时长</span><div class="pt-chips">'
+      +durs.map(function(d){
+        return '<button type="button" class="pt-chip'+(s.targetSec===d?' active':'')+'" onclick="setPlatformSetting(\'targetSec\','+d+');renderPlatformToolbar()">'+d+'s</button>';
+      }).join('')+'</div></div>'
+      +'<div class="pt-row"><span class="pt-lbl">平台</span><div class="pt-chips">'
+      +'<button type="button" class="pt-chip'+(s.platforms.indexOf('tiktok')>=0?' active':'')+'" onclick="toggleShortPlatform(\'tiktok\')">TikTok</button>'
+      +'<button type="button" class="pt-chip'+(s.platforms.indexOf('shorts')>=0?' active':'')+'" onclick="toggleShortPlatform(\'shorts\')">YT Shorts</button>'
+      +'</div></div>'
+      +'<div class="pt-row"><span class="pt-lbl">画幅</span><span class="pt-val">9:16 竖屏</span></div>'
+      +'<div class="pt-row"><span class="pt-lbl">钩子</span><div class="pt-chips">'
+      +['tiktok-hook','data-shock','question'].map(function(k){
+        var labels={'tiktok-hook':'3秒悬念','data-shock':'数据冲击','question':'反问'};
+        return '<button type="button" class="pt-chip'+(s.strategy===k?' active':'')+'" onclick="setPlatformSetting(\'strategy\',\''+k+'\');renderPlatformToolbar()">'+labels[k]+'</button>';
+      }).join('')+'</div></div>';
+  }
+}
+
+function toggleShortPlatform(name){
+  var s=platformSettings.short.platforms||[];
+  var i=s.indexOf(name);
+  if(i>=0)s.splice(i,1);else s.push(name);
+  if(!s.length)s.push('tiktok');
+  platformSettings.short.platforms=s;
+  renderPlatformToolbar();
+}
+
+function resetStoryboard(){
+  setActiveShots([]);
+  renderStoryboardTable();
+  renderExportCards();
+}
+
+function parseStoryboardFromText(text,platform){
+  platform=platform||activePlatform;
+  var shots=[];
+  text.split('\n').forEach(function(line){
+    line=line.trim();
+    var i=line.indexOf('SHOT|');
+    if(i<0)return;
+    var p=line.slice(i+5).split('|');
+    if(p[0]==='long'||p[0]==='short')p=p.slice(1);
+    if(p.length<4)return;
+    function isShotType(t){return /^(hook|A-roll|B-roll|data|chapter)$/i.test((t||'').trim());}
+    if(p.length>=4&&!isShotType(p[2])&&!isNaN(parseInt(p[0],10))){
+      shots.push({id:'sb_'+shots.length,no:parseInt(p[0],10),dur:parseInt(p[1],10)||0,type:'A-roll',narration:(p[2]||'').trim(),visual:(p[3]||'').trim(),onScreen:'',notes:(p[4]||'').trim(),status:'draft'});
+      return;
+    }
+    var shotNo=parseInt(p[0],10);
+    shots.push({
+      id:'sb_'+shots.length+'_'+Date.now(),
+      no:shotNo||shots.length+1,
+      dur:parseInt(p[1],10)||0,
+      type:(p[2]||'A-roll').trim(),
+      narration:(p[3]||'').trim(),
+      visual:(p[4]||'').trim(),
+      onScreen:(p[5]||'').trim(),
+      notes:(p[6]||'').trim(),
+      status:'draft'
+    });
+  });
+  if(shots.length)return shots;
+  var re=/\*\[Visual:\s*([\s\S]*?)\]\*/g;
+  var last=0,m,no=0,buf='';
+  while((m=re.exec(text))!==null){
+    buf=text.slice(last,m.index).replace(/^#+\s*.+$/gm,'').trim();
+    if(buf){
+      no++;
+      shots.push({id:'sb_'+no,no:no,dur:platform==='short'?3:8,narration:buf,visual:'',onScreen:'',notes:'',type:'A-roll',status:'draft'});
+    }
+    if(shots.length)shots[shots.length-1].visual=m[1].trim();
+    else shots.push({id:'sb_1',no:1,dur:0,narration:'',visual:m[1].trim(),notes:''});
+    last=m.index+m[0].length;
+  }
+  buf=text.slice(last).replace(/^#+\s*.+$/gm,'').trim();
+  if(buf){
+    no++;
+    shots.push({id:'sb_'+no,no:no,dur:0,narration:buf,visual:'',notes:''});
+  }
+  return shots;
+}
+
+function parseStoryboardFromOutput(){
+  var text=document.getElementById('outputBoxStudio').textContent||'';
+  if(!text.trim()){showToast('请先生成文稿');return;}
+  var shots=parseStoryboardFromText(text,activePlatform);
+  if(!shots.length){showToast('未识别到 SHOT| 行或 *[Visual]* 块');return;}
+  setActiveShots(shots);
+  renderStoryboardTable();
+  showToast('已解析 '+shots.length+' 个镜头');
+}
+
+function renderStoryboardTable(){
+  var wrap=document.getElementById('storyboardTableWrapStudio');
+  var totalEl=document.getElementById('storyboardTotalStudio');
+  var shots=getActiveShots();
+  if(!wrap)return;
+  if(!shots.length){
+    wrap.innerHTML='<div style="color:var(--text3);font-size:12px;padding:12px 0">选择平台后生成；或「从文稿解析」</div>';
+    if(totalEl)totalEl.textContent='';
+    renderTimeline();renderExportCards();
+    return;
+  }
+  var html='<table class="sb-table"><thead><tr>'
+    +'<th class="sb-no">镜号</th><th class="sb-dur">秒</th><th>旁白</th><th>画面 / 分镜</th><th>屏幕字</th><th>状态</th><th class="sb-ops">操作</th>'
+    +'</tr></thead><tbody>';
+  shots.forEach(function(s,idx){
+    html+='<tr data-idx="'+idx+'">'
+      +'<td class="sb-no">'+s.no+'</td>'
+      +'<td class="sb-dur"><input type="number" min="0" value="'+(s.dur||'')+'" onchange="updateShotField('+idx+',\'dur\',this.value)"></td>'
+      +'<td><textarea onchange="updateShotField('+idx+',\'narration\',this.value)">'+escHtml(s.narration)+'</textarea></td>'
+      +'<td><textarea onchange="updateShotField('+idx+',\'visual\',this.value)">'+escHtml(s.visual)+'</textarea></td>'
+      +'<td><input type="text" value="'+escHtml(s.onScreen||'')+'" onchange="updateShotField('+idx+',\'onScreen\',this.value)"></td>'
+      +'<td><select class="sb-status-select" onchange="updateShotField('+idx+',\'status\',this.value)">'
+      +'<option value="draft"'+(s.status==='draft'||!s.status?' selected':'')+'>草稿</option>'
+      +'<option value="ready"'+(s.status==='ready'?' selected':'')+'>就绪</option>'
+      +'<option value="done"'+(s.status==='done'?' selected':'')+'>已剪</option></select></td>'
+      +'<td class="sb-ops"><button type="button" title="上移" onclick="moveShot('+idx+',-1)">↑</button>'
+      +'<button type="button" title="下移" onclick="moveShot('+idx+',1)">↓</button>'
+      +'<button type="button" title="删除" onclick="deleteShot('+idx+')">✕</button></td></tr>';
+  });
+  html+='</tbody></table>';
+  wrap.innerHTML=html;
+  var sec=shots.reduce(function(a,s){return a+(parseInt(s.dur,10)||0);},0);
+  var tgt=platformSettings[activePlatform].targetSec;
+  if(totalEl)totalEl.textContent='共 '+shots.length+' 镜 · '+formatSec(sec)+' / 目标 '+formatSec(tgt);
+  renderTimeline();renderExportCards();
+}
+
+function escHtml(s){
+  return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/"/g,'&quot;');
+}
+
+function updateShotField(idx,field,val){
+  var shots=getActiveShots();
+  if(!shots[idx])return;
+  if(field==='dur')shots[idx].dur=parseInt(val,10)||0;
+  else shots[idx][field]=val;
+  setActiveShots(shots);
+  renderStoryboardTable();
+}
+
+function addStoryboardRow(){
+  var shots=getActiveShots();
+  var def=activePlatform==='short'?3:8;
+  shots.push({id:'sb_'+Date.now(),no:shots.length+1,dur:def,type:'A-roll',narration:'',visual:'',onScreen:'',notes:'',status:'draft'});
+  setActiveShots(shots);
+  renderStoryboardTable();
+}
+
+function deleteShot(idx){
+  var shots=getActiveShots();
+  shots.splice(idx,1);
+  shots.forEach(function(s,i){s.no=i+1;});
+  setActiveShots(shots);
+  renderStoryboardTable();
+}
+
+function moveShot(idx,dir){
+  var shots=getActiveShots();
+  var j=idx+dir;
+  if(j<0||j>=shots.length)return;
+  var t=shots[idx];
+  shots[idx]=shots[j];
+  shots[j]=t;
+  shots.forEach(function(s,i){s.no=i+1;});
+  setActiveShots(shots);
+  renderStoryboardTable();
+}
+
+function renderTimeline(){
+  var bar=document.getElementById('timelineBar');
+  var meta=document.getElementById('timelineMeta');
+  var shots=getActiveShots();
+  if(!bar)return;
+  if(!shots.length){bar.innerHTML='';if(meta)meta.textContent='';return;}
+  var total=shots.reduce(function(a,s){return a+(parseInt(s.dur,10)||3);},0)||1;
+  var colors=['#7c6cfc','#4fd1c5','#f59e0b','#22c55e'];
+  bar.innerHTML=shots.map(function(s,i){
+    var w=Math.max(4,Math.round(((parseInt(s.dur,10)||3)/total)*100));
+    return '<div class="timeline-seg" style="width:'+w+'%;background:'+colors[i%colors.length]+'" title="镜'+s.no+'"></div>';
+  }).join('');
+  if(meta)meta.textContent='时间轴 '+formatSec(total)+' · '+activePlatform.toUpperCase();
+}
+
+function renderExportCards(){
+  var el=document.getElementById('exportCardsStudio');
+  if(!el)return;
+  if(activePlatform==='long'){
+    el.innerHTML='<div class="export-card"><h4>YouTube 发布包</h4><p>章节时间戳 + 简介 + 旁白稿 + 分镜 CSV（16:9）</p>'
+      +'<button type="button" onclick="exportYouTubePack()">复制 YouTube 全套</button>'
+      +'<button type="button" class="secondary" onclick="exportStoryboardNarration()">仅旁白稿</button></div>';
+  }else{
+    el.innerHTML='<div class="export-card"><h4>TikTok / Shorts 发布包</h4><p>竖屏字幕 + SRT + 口播稿（9:16）</p>'
+      +'<button type="button" onclick="exportShortsPack()">复制 Shorts 全套</button>'
+      +'<button type="button" class="secondary" onclick="exportStoryboardTable()">分镜 CSV</button></div>';
+  }
+}
+
+function buildChapterMarkers(){
+  var shots=getActiveShots(),t=0,lines=[];
+  shots.forEach(function(s){
+    lines.push(formatSec(t)+' '+((s.narration||'').slice(0,24)||'镜头'+s.no));
+    t+=parseInt(s.dur,10)||5;
+  });
+  return lines.join('\n');
+}
+
+function exportYouTubePack(){
+  var shots=getActiveShots();
+  if(!shots.length){showToast('分镜表为空');return;}
+  var t=selectedTopic||{};
+  var pack='【标题】'+t.title+'\n\n【简介】\n基于 '+((window._topics||[]).length)+' 篇论文与专题资料。研究提示：相关不等于因果。\n\n【章节】\n'+buildChapterMarkers()
+    +'\n\n【旁白】\n'+shots.map(function(s){return s.narration;}).join('\n\n')
+    +'\n\n【分镜CSV】\n镜号,秒,旁白,画面\n'+shots.map(function(s){return [s.no,s.dur,'"'+s.narration.replace(/"/g,'""')+'"','"'+s.visual.replace(/"/g,'""')+'"'].join(',');}).join('\n');
+  navigator.clipboard.writeText(pack).then(function(){showToast('YouTube 发布包已复制');});
+}
+
+function exportShortsPack(){
+  var shots=getActiveShots();
+  if(!shots.length){showToast('分镜表为空');return;}
+  var t=0,srt='';
+  shots.forEach(function(s,i){
+    var d=parseInt(s.dur,10)||3;
+    srt+=String(i+1)+'\n'+formatSrt(t)+' --> '+formatSrt(t+d)+'\n'+(s.narration||'')+'\n\n';
+    t+=d;
+  });
+  var pack='【竖屏 9:16 · '+platformSettings.short.targetSec+'s】\n\n【口播】\n'+shots.map(function(s){return s.narration;}).join('\n')
+    +'\n\n【屏幕字】\n'+shots.map(function(s){return s.onScreen||'';}).filter(Boolean).join('\n')
+    +'\n\n【SRT】\n'+srt;
+  navigator.clipboard.writeText(pack).then(function(){showToast('Shorts 发布包已复制');});
+}
+
+function formatSrt(sec){
+  sec=parseInt(sec,10)||0;
+  var h=Math.floor(sec/3600),m=Math.floor((sec%3600)/60),s=sec%60,ms=0;
+  return (h<10?'0':'')+h+':'+(m<10?'0':'')+m+':'+(s<10?'0':'')+s+','+(ms<100?'0':'')+(ms<10?'0':'')+ms;
+}
+
+function exportStoryboardNarration(){
+  var shots=getActiveShots();
+  if(!shots.length){showToast('分镜表为空');return;}
+  var text=shots.map(function(s){
+    return '## 镜头 '+s.no+(s.dur?(' ('+s.dur+'s)'):'')+'\n'+s.narration;
+  }).join('\n\n');
+  navigator.clipboard.writeText(text).then(function(){showToast('旁白稿已复制');});
+}
+
+function exportStoryboardTable(){
+  var shots=getActiveShots();
+  if(!shots.length){showToast('分镜表为空');return;}
+  var lines=['镜号\t秒\t类型\t旁白\t画面\t字幕\t状态'];
+  shots.forEach(function(s){
+    lines.push([s.no,s.dur||'',s.type||'',s.narration,s.visual,s.onScreen||'',s.status||''].join('\t'));
+  });
+  navigator.clipboard.writeText(lines.join('\n')).then(function(){showToast('分镜表已复制');});
+}
+
+function applyStoryboardFromGeneration(text,platform){
+  platform=platform||activePlatform;
+  setActiveShots(parseStoryboardFromText(text,platform));
+  renderStoryboardTable();
+  updateRefUsedHintStudio();
+}
+
+function updateRefUsedHintStudio(){
+  var el=document.getElementById('refUsedHintStudio');
+  if(!el)return;
+  var ref=buildRefContext();
+  var n=(window._topics||[]).length;
+  if(ref.textBlock||ref.imageBlocks.length||n){
+    var names=refFiles.filter(function(f){return f.status==='ok';}).map(function(f){return f.name;}).join('、');
+    el.style.display='block';
+    el.textContent='已读入 '+n+' 篇摘要'+(names?' + '+names:'')+' → 生成 '+activePlatform;
+  }else el.style.display='none';
+}
+
+function updateStudioOutputView(){
+  var box=document.getElementById('outputBoxStudio');
+  if(box)box.textContent=platformOutputs[activePlatform]||'';
+  var wc=document.getElementById('wordCountStudio');
+  if(wc)wc.textContent=(platformOutputs[activePlatform]||'').length?('共'+(platformOutputs[activePlatform].length)+'字'):'';
+}
+
+function copyStudioOutput(){
+  var t=document.getElementById('outputBoxStudio').textContent||'';
+  navigator.clipboard.writeText(t).then(function(){showToast('已复制');});
+}
+
+function generateActivePlatform(){
+  if(activePlatform==='long')generateBatch1();
+  else generateBatch2();
+}
+
+function resetActivePlatform(){
+  platformOutputs[activePlatform]='';
+  resetBatch(activePlatform==='long'?1:2);
+  resetStoryboard();
+  updateStudioOutputView();
+  var btn=document.getElementById('btnResetStudio');
+  if(btn)btn.style.display='none';
+}
+
+function updateRefUsedHint(){
+  updateRefUsedHintStudio();
 }
 
 function startTimer(subLineId,msgs,interval){
@@ -2140,45 +2786,49 @@ async function generateBatch1(){
   if(!selectedTopic)return;
   var key=getApiKey();
   if(!key){showKeyModal();return;}
-  document.getElementById('genBtn1').disabled=true;
-  document.getElementById('genArea1').style.display='none';
-  document.getElementById('genLoading1').style.display='block';
-  document.getElementById('outputArea1').style.display='none';
-  var timer=startTimer('genSubLine1',['构建脚本结构...','分析论文核心数据...','撰写中文开场钩子...','展开背景叙事...','呈现核心数据...','撰写英文脚本...','打磨措辞与节奏...']);
+  activePlatform='long';
+  var ps=platformSettings.long;
+  var btn=document.getElementById('genBtnStudio');
+  if(btn)btn.disabled=true;
+  document.getElementById('genAreaStudio').style.display='none';
+  document.getElementById('genLoadingStudio').style.display='block';
+  document.getElementById('genStatusStudio').textContent='正在生成 YouTube 长视频分镜…';
+  var timer=startTimer('genSubLineStudio',['通读60篇摘要与专题资料…','规划章节结构…','撰写旁白…','设计画面分镜…','对齐目标时长 '+formatSec(ps.targetSec)+'…']);
   var ref=buildRefContext();
   var msg=getTopicContext(ref.textBlock)
-    +'Generate ONLY the following two scripts (do not generate TikTok or image prompts):\n\n'
-    +'### 1. YouTube Chinese Script (8-10 min)\n'
-    +'Structure: Hook15s -> Background -> KeyFindings+Data -> WhyItMatters -> ScientificCaveats -> ActionTips -> Outro\n'
-    +'Add *[Visual: ...]* for each section. Full length, do not truncate.\n\n'
-    +'### 2. YouTube English Script (8-10 min)\n'
-    +'Same full structure for English-speaking audience. Include *[Visual: ...]*. Do not truncate.';
-  var outEl=document.getElementById('outputBox1');
+    +'PLATFORM: YouTube long-form, 16:9, target duration ~'+ps.targetSec+' seconds (~'+formatSec(ps.targetSec)+').\n\n'
+    +'OUTPUT — PART A only SHOT lines (one per line, no extra text):\n'
+    +'SHOT|long|镜号|秒数|镜头类型|旁白中文|画面描述|屏幕字幕|备注\n'
+    +'Types: hook, A-roll, B-roll, data, chapter\n'
+    +'PART B after all SHOT lines:\n===SCRIPT===\nFull readable script with chapters.\n\n'
+    +'Rules: 15-40 shots; total duration near '+ps.targetSec+'s; research suggests only; correlation not causation.';
+  var outEl=document.getElementById('outputBoxStudio');
   outEl.textContent='';
   var buf1='';
-  var key2=getApiKey();
-  if(!key2){clearInterval(timer);showKeyModal();document.getElementById('genLoading1').style.display='none';document.getElementById('genArea1').style.display='block';document.getElementById('genBtn1').disabled=false;return;}
   try{
     await callClaudeStreamWithImages(getDocStyle(),msg,ref.imageBlocks,function(chunk){
-      if(document.getElementById('genLoading1').style.display!=='none'){
+      if(document.getElementById('genLoadingStudio').style.display!=='none'){
         clearInterval(timer);
-        document.getElementById('genLoading1').style.display='none';
-        document.getElementById('outputArea1').style.display='block';
+        document.getElementById('genLoadingStudio').style.display='none';
+        document.getElementById('genAreaStudio').style.display='block';
+        if(btn)btn.disabled=false;
+        document.getElementById('btnResetStudio').style.display='inline-block';
       }
       buf1+=chunk;outEl.textContent=buf1;outEl.scrollTop=outEl.scrollHeight;
-      document.getElementById('wordCount1').textContent='生成中… '+buf1.length+'字';
+      document.getElementById('wordCountStudio').textContent='生成中… '+buf1.length+'字';
     });
+    platformOutputs.long=buf1;
     outputFull=buf1;
-    document.getElementById('wordCount1').textContent='共'+buf1.length+'字';
-    document.getElementById('stepBlock1').classList.add('step-done');
-    document.getElementById('stepReset1').style.display='inline-block';
-    document.getElementById('genBtn1').disabled=false;
+    document.getElementById('outputBox1').textContent=buf1;
+    applyStoryboardFromGeneration(buf1,'long');
+    updateStudioOutputView();
+    updateRefUsedHintStudio();
     checkPublishRow();
   }catch(e){
     clearInterval(timer);
-    document.getElementById('genLoading1').style.display='none';
-    document.getElementById('genArea1').style.display='block';
-    document.getElementById('genBtn1').disabled=false;
+    document.getElementById('genLoadingStudio').style.display='none';
+    document.getElementById('genAreaStudio').style.display='block';
+    if(btn)btn.disabled=false;
     alert('生成出错：'+e.message);
   }
 }
@@ -2187,69 +2837,74 @@ async function generateBatch2(){
   if(!selectedTopic)return;
   var key=getApiKey();
   if(!key){showKeyModal();return;}
-  document.getElementById('genBtn2').disabled=true;
-  document.getElementById('genArea2').style.display='none';
-  document.getElementById('genLoading2').style.display='block';
-  document.getElementById('outputArea2').style.display='none';
-  var timer=startTimer('genSubLine2',['提炼核心钩子...','压缩为60秒口播稿...','撰写中文TikTok版...','撰写英文TikTok版...','生成配图提示词...','优化视觉描述...']);
+  activePlatform='short';
+  var ps=platformSettings.short;
+  var btn=document.getElementById('genBtnStudio');
+  if(btn)btn.disabled=true;
+  document.getElementById('genAreaStudio').style.display='none';
+  document.getElementById('genLoadingStudio').style.display='block';
+  document.getElementById('genStatusStudio').textContent='正在生成 TikTok / Shorts 分镜…';
+  var plats=(ps.platforms||['tiktok','shorts']).join(' + ');
+  var timer=startTimer('genSubLineStudio',['3秒钩子…','压缩口播至 '+ps.targetSec+' 秒…','竖屏画面…','屏幕字幕…','配图提示词…']);
   var ref=buildRefContext();
   var msg=getTopicContext(ref.textBlock)
-    +'Generate ONLY the following (do not generate YouTube long scripts):\n\n'
-    +'### 1. TikTok Chinese Script (60 seconds)\n'
-    +'Spoken style, max 12 chars per sentence, strongest hook in first 3 seconds. Mention this is a correlation study, not proof of causation.\n\n'
-    +'### 2. TikTok English Script (60 seconds)\n'
-    +'Casual punchy sentences, hook in first 3 seconds, note correlation vs causation.\n\n'
-    +'### 3. Image Prompts for Flux/Midjourney (3 images)\n'
-    +'---Cover 16:9---\n[detailed cinematic prompt]\n---Data Infographic---\n[detailed prompt]\n---Mechanism or Tips---\n[detailed prompt]';
-  var outEl=document.getElementById('outputBox2');
+    +'PLATFORM: vertical 9:16 for '+plats+', total ~'+ps.targetSec+' seconds. Strongest hook in first 3 seconds.\n\n'
+    +'OUTPUT — PART A SHOT lines only:\n'
+    +'SHOT|short|镜号|秒数|镜头类型|口播中文|竖屏画面|屏幕大字|备注\n'
+    +'Types: hook, A-roll, text-card. Max 12 chars per spoken sentence in narration.\n'
+    +'PART B:\n===SCRIPT===\nThen ### Image Prompts (3) for 9:16 vertical: Cover, Data, CTA.\n\n'
+    +'Rules: 4-12 shots; correlation not causation; punchy spoken Chinese.';
+  var outEl=document.getElementById('outputBoxStudio');
   outEl.textContent='';
   var buf2='';
-  var key2=getApiKey();
-  if(!key2){clearInterval(timer);showKeyModal();document.getElementById('genLoading2').style.display='none';document.getElementById('genArea2').style.display='block';document.getElementById('genBtn2').disabled=false;return;}
   try{
     await callClaudeStreamWithImages(getDocStyle(),msg,ref.imageBlocks,function(chunk){
-      if(document.getElementById('genLoading2').style.display!=='none'){
+      if(document.getElementById('genLoadingStudio').style.display!=='none'){
         clearInterval(timer);
-        document.getElementById('genLoading2').style.display='none';
-        document.getElementById('outputArea2').style.display='block';
+        document.getElementById('genLoadingStudio').style.display='none';
+        document.getElementById('genAreaStudio').style.display='block';
+        if(btn)btn.disabled=false;
+        document.getElementById('btnResetStudio').style.display='inline-block';
       }
       buf2+=chunk;outEl.textContent=buf2;outEl.scrollTop=outEl.scrollHeight;
-      document.getElementById('wordCount2').textContent='生成中… '+buf2.length+'字';
+      document.getElementById('wordCountStudio').textContent='生成中… '+buf2.length+'字';
     });
-    document.getElementById('wordCount2').textContent='共'+buf2.length+'字';
-    outputFull=(document.getElementById('outputBox1').textContent||'')+'\n\n---\n\n'+buf2;
-    document.getElementById('stepBlock2').classList.add('step-done');
-    document.getElementById('stepReset2').style.display='inline-block';
-    document.getElementById('genBtn2').disabled=false;
+    platformOutputs.short=buf2;
+    document.getElementById('outputBox2').textContent=buf2;
+    outputFull=(platformOutputs.long||'')+'\n\n---\n\n'+buf2;
+    applyStoryboardFromGeneration(buf2,'short');
+    updateStudioOutputView();
+    updateRefUsedHintStudio();
+    if(activePlatform==='short')switchPlatform('short');
     checkPublishRow();
   }catch(e){
     clearInterval(timer);
-    document.getElementById('genLoading2').style.display='none';
-    document.getElementById('genArea2').style.display='block';
-    document.getElementById('genBtn2').disabled=false;
+    document.getElementById('genLoadingStudio').style.display='none';
+    document.getElementById('genAreaStudio').style.display='block';
+    if(btn)btn.disabled=false;
     alert('生成出错：'+e.message);
   }
 }
 
 function checkPublishRow(){
-  var has1=document.getElementById('outputArea1').style.display!=='none'&&document.getElementById('outputBox1').textContent.length>10;
-  var has2=document.getElementById('outputArea2').style.display!=='none'&&document.getElementById('outputBox2').textContent.length>10;
+  var has1=(platformOutputs.long||'').length>10||(storyboards.long||[]).length>0;
+  var has2=(platformOutputs.short||'').length>10||(storyboards.short||[]).length>0;
   document.getElementById('publishRow').style.display=(has1||has2)?'block':'none';
 }
 
 function resetBatch(n){
-  if(n===1){
-    document.getElementById('outputArea1').style.display='none';
-    document.getElementById('genArea1').style.display='block';
-    document.getElementById('genBtn1').disabled=false;
-    document.getElementById('stepBlock1').classList.remove('step-done');
-    document.getElementById('stepReset1').style.display='none';
-  }else{
-    document.getElementById('outputArea2').style.display='none';
-    document.getElementById('genArea2').style.display='block';
-    document.getElementById('genBtn2').disabled=false;
-    document.getElementById('stepBlock2').classList.remove('step-done');
-    document.getElementById('stepReset2').style.display='none';
+  var p=n===1?'long':'short';
+  platformOutputs[p]='';
+  storyboards[p]=[];
+  if(activePlatform===p){
+    resetStoryboard();
+    updateStudioOutputView();
+    var btn=document.getElementById('btnResetStudio');
+    if(btn)btn.style.display='none';
+    var ga=document.getElementById('genAreaStudio');
+    if(ga)ga.style.display='block';
+    var gb=document.getElementById('genBtnStudio');
+    if(gb)gb.disabled=false;
   }
   checkPublishRow();
 }
@@ -2306,7 +2961,9 @@ function newContent(){
 /* ═══════════════════════════════════════════
    INIT
 ═══════════════════════════════════════════ */
-initTags();buildChecklist();updateKeyStatus();updateTopBar('discover');
+initTags();buildChecklist();updateKeyStatus();initAppVersion();
+updateTopBar('discover');switchPlatform('long');
+loadPersistedRefFiles();
 
 </script>
 </body>
