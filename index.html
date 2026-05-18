@@ -1,10 +1,10 @@
 <!DOCTYPE html>
 <html lang="zh">
 <head>
-<!-- Paperstill index.html v2.4.2 · 2026-05-18 · 保存时请重命名为 index-v2.4.2.html 便于回溯 -->
+<!-- Paperstill index.html v2.4.3 · 2026-05-18 · 保存时请重命名为 index-v2.4.3.html 便于回溯 -->
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
-<title>Paperstill v2.4.2</title>
+<title>Paperstill v2.4.3</title>
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Mono:wght@400;500&family=Noto+Sans+SC:wght@400;500;700&display=swap');
 
@@ -841,6 +841,7 @@ body {
               <button type="button" class="btn-secondary" id="stopScriptBtn" style="display:none" onclick="stopScript()">■ 停止</button>
               <button type="button" class="btn-secondary" id="regenScriptBtn" style="display:none" onclick="regenScript()">↺ 重新生成</button>
               <button type="button" id="markPublishedBtn" style="display:none;padding:6px 14px;border-radius:8px;border:1px solid #22c55e44;background:#22c55e0a;color:var(--green);font-size:12px;font-weight:600;cursor:pointer;font-family:'Syne',sans-serif" onclick="markPublished()">✓ 标记已发布</button>
+              <button type="button" id="exportScriptDocBtn" style="display:none;padding:6px 14px;border-radius:8px;border:1px solid #4fd1c544;background:#4fd1c508;color:var(--teal);font-size:12px;font-weight:600;cursor:pointer;font-family:'Syne',sans-serif" onclick="exportScriptDoc()">📄 导出脚本文档</button>
               <span id="scriptWordCount" style="font-size:12px;color:var(--text2);font-family:'DM Mono',monospace"></span>
             </div>
             <div id="genScriptLoading" style="display:none">
@@ -895,6 +896,7 @@ body {
                   <button type="button" onclick="addStoryboardRow()">+ 镜头</button>
                   <button type="button" onclick="exportStoryboardNarration()">旁白稿</button>
                   <button type="button" onclick="exportStoryboardTable()">分镜 CSV</button>
+                  <button type="button" onclick="exportStoryboardDoc()" style="border-color:#4fd1c544;color:var(--teal)">📄 导出分镜文档</button>
                 </div>
               </div>
               <div class="sb-table-wrap" id="storyboardTableWrapStudio"></div>
@@ -999,7 +1001,7 @@ var selectedTopic=null,outputFull='',checkState={};
 var SK_STATE='crawl_state2',SK_PAPERS='paper_db2',SK_SCORED='scored_db2',SK_REF='ref_files_v1';
 var SK_HIST='paperstill_hist';
 var SCORE_N=60,FETCH_N=60,CRAWL_DIRS_N=20;
-var APP_VERSION='2.4.2';
+var APP_VERSION='2.4.3';
 var APP_BUILD='2026-05-18';
 var _produceSessionKey='';
 var SK_CHECK='pub_check_v1';
@@ -2741,6 +2743,7 @@ function switchPlatform(p){
   setStudioState(hasOut?'done':'idle');
   var scriptRegen=document.getElementById('regenScriptBtn');
   if(scriptRegen)scriptRegen.style.display=scriptOutputs[p]?'inline-flex':'none';
+  if(typeof _syncExportScriptBtn==='function')_syncExportScriptBtn();
 }
 
 // Script outputs per platform (step 2)
@@ -2881,6 +2884,7 @@ async function generateScript(){
     scriptOutputs[p]=buf;
     if(wc)wc.textContent='共'+buf.length+'字';
     setScriptState('done');
+    _syncExportScriptBtn();
   }catch(e){
     stopped=e.name==='AbortError';
     clearInterval(timer);
@@ -3622,6 +3626,529 @@ updateTopBar('discover');
 loadPersistedRefFiles().then(function(){
   if(hasReadyRefFiles()&&document.getElementById('panel-produce').classList.contains('active'))updateProduce();
 });
+
+/* ═══════════════════════════════════════════
+   DOCX EXPORT
+═══════════════════════════════════════════ */
+var _docxReady=false;
+
+function loadDocxLib(cb){
+  if(_docxReady){cb();return;}
+  var s=document.createElement('script');
+  s.src='https://unpkg.com/docx@8.5.0/build/index.js';
+  s.onload=function(){_docxReady=true;cb();};
+  s.onerror=function(){showToast('无法加载导出库，请检查网络');};
+  document.head.appendChild(s);
+}
+
+/* ── shared helpers ── */
+function _dRun(text,opts){
+  opts=opts||{};
+  return new docx.TextRun({text:text,font:'Arial',size:opts.size||22,bold:!!opts.bold,italics:!!opts.italic,color:opts.color||'1A1A1A'});
+}
+function _dPara(children,opts){
+  opts=opts||{};
+  if(!Array.isArray(children))children=[children];
+  return new docx.Paragraph({
+    alignment:opts.align||docx.AlignmentType.LEFT,
+    spacing:{before:opts.before!=null?opts.before:60,after:opts.after!=null?opts.after:60,line:276},
+    children:children,
+    ...(opts.border?{border:opts.border}:{}),
+    ...(opts.heading?{heading:opts.heading}:{}),
+  });
+}
+function _dBlank(n){
+  n=n||1;var r=[];
+  for(var i=0;i<n;i++)r.push(_dPara([_dRun('')],{before:0,after:0}));
+  return r;
+}
+function _dH1(text,color){
+  color=color||'6C3FC4';
+  return new docx.Paragraph({heading:docx.HeadingLevel.HEADING_1,spacing:{before:300,after:80},
+    border:{bottom:{style:docx.BorderStyle.SINGLE,size:8,color:color,space:4}},
+    children:[new docx.TextRun({text:text,font:'Arial',size:40,bold:true,color:color})]});
+}
+function _dH2(text,color){
+  color=color||'1A1A2E';
+  return new docx.Paragraph({heading:docx.HeadingLevel.HEADING_2,spacing:{before:220,after:60},
+    children:[new docx.TextRun({text:text,font:'Arial',size:28,bold:true,color:color})]});
+}
+function _dH3(text,color){
+  color=color||'00897B';
+  return new docx.Paragraph({heading:docx.HeadingLevel.HEADING_3,spacing:{before:160,after:40},
+    children:[new docx.TextRun({text:text,font:'Arial',size:24,bold:true,color:color})]});
+}
+function _dDivider(color,before,after){
+  return new docx.Paragraph({spacing:{before:before||120,after:after||120},
+    border:{bottom:{style:docx.BorderStyle.SINGLE,size:4,color:color||'CCCCCC',space:1}},children:[]});
+}
+var _dBorders={
+  top:{style:docx.BorderStyle.SINGLE,size:1,color:'CCCCCC'},
+  bottom:{style:docx.BorderStyle.SINGLE,size:1,color:'CCCCCC'},
+  left:{style:docx.BorderStyle.SINGLE,size:1,color:'CCCCCC'},
+  right:{style:docx.BorderStyle.SINGLE,size:1,color:'CCCCCC'}
+};
+function _dCell(children,width,fill,pad){
+  if(!Array.isArray(children))children=[children];
+  return new docx.TableCell({
+    borders:_dBorders,
+    width:{size:width,type:docx.WidthType.DXA},
+    shading:fill?{fill:fill,type:docx.ShadingType.CLEAR}:undefined,
+    margins:pad||{top:80,bottom:80,left:120,right:120},
+    children:children
+  });
+}
+function _dHCell(text,width,fill){
+  return _dCell([_dPara([_dRun(text,{bold:true,color:'FFFFFF',size:19})],{before:0,after:0})],width,fill||'1A1A2E');
+}
+function _dMetaRow(labels,widths,fills){
+  return new docx.TableRow({children:labels.map(function(l,i){
+    return _dCell([
+      _dPara([_dRun(l,{bold:true,size:18,color:'888888'})],{before:0,after:30}),
+      _dPara([_dRun('',{size:21})],{before:0,after:0})
+    ],widths[i],fills?fills[i]:'F7F7F7',{top:100,bottom:100,left:160,right:160});
+  })});
+}
+function _dAnnotBox(label,lines){
+  lines=lines||3;
+  return new docx.Table({width:{size:9360,type:docx.WidthType.DXA},columnWidths:[9360],rows:[
+    new docx.TableRow({height:{value:380*lines,rule:'atLeast'},children:[
+      new docx.TableCell({
+        borders:{top:{style:docx.BorderStyle.SINGLE,size:1,color:'8B7FCC'},bottom:{style:docx.BorderStyle.SINGLE,size:1,color:'8B7FCC'},left:{style:docx.BorderStyle.SINGLE,size:1,color:'8B7FCC'},right:{style:docx.BorderStyle.SINGLE,size:1,color:'8B7FCC'}},
+        width:{size:9360,type:docx.WidthType.DXA},
+        shading:{fill:'F3F0FF',type:docx.ShadingType.CLEAR},
+        margins:{top:100,bottom:100,left:180,right:180},
+        children:[_dPara([_dRun((label||'审核备注')+':',{size:18,italic:true,color:'6C3FC4',bold:true})],{before:0,after:40})]
+      })
+    ]])
+  ]});
+}
+function _dScriptBlock(title,placeholder,lines){
+  var blockTable=new docx.Table({width:{size:9360,type:docx.WidthType.DXA},columnWidths:[9360],rows:[
+    new docx.TableRow({height:{value:500,rule:'atLeast'},children:[
+      _dCell([_dPara([_dRun(placeholder||'（AI 将在此填入内容）',{size:20,color:'888888',italic:true})],{before:0,after:0})],9360,'F7F7F7',{top:120,bottom:120,left:200,right:200})
+    ]})
+  ]});
+  return [_dH3(title)].concat([blockTable]).concat(_dBlank(1)).concat([_dAnnotBox('审核备注',lines||3)]).concat(_dBlank(1));
+}
+function _dPageBreak(){
+  return new docx.Paragraph({pageBreakBefore:true,children:[new docx.TextRun('')]});
+}
+function _dHeader(title,right){
+  return new docx.Header({children:[new docx.Paragraph({
+    spacing:{before:0,after:0},
+    border:{bottom:{style:docx.BorderStyle.SINGLE,size:4,color:'6C3FC4',space:4}},
+    tabStops:[{type:docx.TabStopType.RIGHT,position:9360}],
+    children:[
+      new docx.TextRun({text:'Paperstill · '+(title||'文档'),font:'Arial',size:18,color:'6C3FC4',bold:true}),
+      new docx.TextRun({text:'\t'+(right||''),font:'Arial',size:18,color:'888888'})
+    ]
+  })]});
+}
+function _dFooter(){
+  return new docx.Footer({children:[new docx.Paragraph({
+    spacing:{before:0,after:0},
+    border:{top:{style:docx.BorderStyle.SINGLE,size:4,color:'CCCCCC',space:4}},
+    tabStops:[{type:docx.TabStopType.RIGHT,position:9360}],
+    children:[
+      new docx.TextRun({text:'仅供内部审核',font:'Arial',size:17,color:'888888',italics:true}),
+      new docx.TextRun({text:'\t第 ',font:'Arial',size:17,color:'888888'}),
+      new docx.TextRun({children:[docx.PageNumber.CURRENT],font:'Arial',size:17,color:'888888'}),
+      new docx.TextRun({text:' 页',font:'Arial',size:17,color:'888888'})
+    ]
+  })]});
+}
+function _saveDocx(buffer,filename){
+  var blob=new Blob([buffer],{type:'application/vnd.openxmlformats-officedocument.wordprocessingml.document'});
+  var url=URL.createObjectURL(blob);
+  var a=document.createElement('a');a.href=url;a.download=filename;
+  document.body.appendChild(a);a.click();
+  setTimeout(function(){document.body.removeChild(a);URL.revokeObjectURL(url);},1000);
+}
+
+/* ═══════════════════════════════════════════
+   EXPORT SCRIPT DOC
+═══════════════════════════════════════════ */
+function exportScriptDoc(){
+  loadDocxLib(function(){
+    showToast('正在生成脚本文档…');
+    try{
+      var title=(selectedTopic?selectedTopic.title:'[题材]')||'[题材]';
+      var longScript=scriptOutputs.long||platformOutputs.long||'';
+      var shortScript=scriptOutputs.short||platformOutputs.short||'';
+      var date=new Date().toLocaleDateString('zh-CN');
+      var platform=activePlatform==='long'?'YouTube 长视频':'TikTok / Shorts';
+
+      var children=[
+        // Cover
+        ..._dBlank(2),
+        _dPara([_dRun('✦  PAPERSTILL',{bold:true,size:26,color:'6C3FC4'})],{align:docx.AlignmentType.CENTER,before:0,after:30}),
+        _dPara([_dRun('Script Review Document',{size:20,color:'888888',italic:true})],{align:docx.AlignmentType.CENTER,before:0,after:160}),
+        new docx.Paragraph({alignment:docx.AlignmentType.CENTER,spacing:{before:0,after:60},
+          border:{bottom:{style:docx.BorderStyle.SINGLE,size:12,color:'6C3FC4',space:8}},
+          children:[new docx.TextRun({text:title,font:'Arial',size:48,bold:true,color:'1A1A2E'})]}),
+        ..._dBlank(1),
+        new docx.Table({width:{size:9360,type:docx.WidthType.DXA},columnWidths:[2340,2340,2340,2340],rows:[
+          _dMetaRow(['📅  生成日期','🎯  平台','⏱  目标时长','✅  审核状态'],[2340,2340,2340,2340]),
+        ]}),
+        ..._dBlank(2),
+        _dPara([_dRun('本文档由 Paperstill 自动生成 · 请在文档内完成审核和修改后再进入分镜制作',{size:18,color:'888888',italic:true})],{align:docx.AlignmentType.CENTER}),
+        _dPageBreak(),
+
+        // Section 1: 概要
+        _dH1('01  内容概要','6C3FC4'),
+        ..._dBlank(1),
+        new docx.Table({width:{size:9360,type:docx.WidthType.DXA},columnWidths:[1800,7560],rows:[
+          new docx.TableRow({children:[_dHCell('核心论点',1800,'3D1A8A'),_dCell([_dPara([_dRun(selectedTopic?selectedTopic.hook||selectedTopic.title:'（论文核心发现）',{size:20,color:selectedTopic?'1A1A1A':'888888',italic:!selectedTopic})],{before:0,after:0})],7560,'F3F0FF',{top:100,bottom:100,left:180,right:180})]}),
+          new docx.TableRow({children:[_dHCell('论文来源',1800,'1A1A2E'),_dCell([_dPara([_dRun(selectedTopic?selectedTopic.paper||'—':'期刊 · 年份 · PMID/DOI',{size:20,color:'666666'})],{before:0,after:0})],7560,'F7F7F7',{top:100,bottom:100,left:180,right:180})]}),
+          new docx.TableRow({children:[_dHCell('目标受众',1800,'00695C'),_dCell([_dPara([_dRun('25-45岁关注健康的普通大众，无医学背景',{size:20,color:'666666'})],{before:0,after:0})],7560,'F7F7F7',{top:100,bottom:100,left:180,right:180})]}),
+          new docx.TableRow({children:[_dHCell('安全标注',1800,'F57F17'),_dCell([_dPara([_dRun(selectedTopic&&selectedTopic.safety_level==='warn'?'⚠ 需人工审核：可能含动物实验/小样本/特定品牌药物，措辞需特别谨慎':'✓ 标准安全等级',{size:20,color:selectedTopic&&selectedTopic.safety_level==='warn'?'F57F17':'2E7D32'})],{before:0,after:0})],7560,selectedTopic&&selectedTopic.safety_level==='warn'?'FFFDE7':'F1F8E9',{top:100,bottom:100,left:180,right:180})]})
+        ]}),
+        ..._dBlank(1),
+        _dAnnotBox('概要审核备注',3),
+        _dPageBreak(),
+
+        // Section 2: YouTube 脚本
+        _dH1('02  YouTube 长视频脚本','D32F2F'),
+        _dPara([_dRun('横屏 16:9 · 中英双语 · 目标 8-15 分钟',{size:19,color:'888888',italic:true})],{before:0,after:120}),
+        _dH2('▶  中文旁白','D32F2F'),
+        _dDivider('D32F2F',0,80),
+      ];
+
+      // Inject long script if available, split by sections
+      if(longScript){
+        var longLines=longScript.split('\n');
+        var curBuf=[];var sections=[];
+        longLines.forEach(function(line){
+          if(/^#{1,3}\s/.test(line.trim())||/^(Hook|Background|Chapter|===SCRIPT===)/i.test(line.trim())){
+            if(curBuf.length)sections.push(curBuf.join('\n'));
+            curBuf=[line];
+          }else{curBuf.push(line);}
+        });
+        if(curBuf.length)sections.push(curBuf.join('\n'));
+        if(sections.length>1){
+          sections.forEach(function(sec,i){
+            var lines2=sec.split('\n');var heading=lines2[0].replace(/^#+\s*/,'').replace(/^===.*===$/,'').trim()||('段落 '+(i+1));
+            var body=lines2.slice(1).join('\n').trim();
+            children=children.concat(_dScriptBlock(heading,body||'（内容待填入）',3));
+          });
+        }else{
+          children=children.concat(_dScriptBlock('完整脚本',longScript.slice(0,3000)+(longScript.length>3000?'\n…（共'+longScript.length+'字）':''),6));
+        }
+      }else{
+        children=children.concat(_dScriptBlock('Hook（开场 15 秒）','从最震撼的数据或反常识结论切入',4));
+        children=children.concat(_dScriptBlock('背景铺垫','介绍研究背景、问题的普遍性',3));
+        children=children.concat(_dScriptBlock('核心发现 + 数据','详细展开论文关键数据，配合日常类比',4));
+        children=children.concat(_dScriptBlock('机制解析（为什么）','解释背后的生物/化学机制',3));
+        children=children.concat(_dScriptBlock('研究局限性','相关性vs因果性、样本量、研究阶段',3));
+        children=children.concat(_dScriptBlock('行动建议','2-3条具体可操作建议，以"研究提示"开头',3));
+        children=children.concat(_dScriptBlock('Outro + 免责声明','内容仅供科学参考，不构成医疗建议',2));
+      }
+
+      children.push(_dPageBreak());
+
+      // Section 3: TikTok
+      children.push(_dH1('03  TikTok / Shorts 脚本','1A1A2E'));
+      children.push(_dPara([_dRun('竖屏 9:16 · 60 秒 · 每句 ≤ 12 字',{size:19,color:'888888',italic:true})],{before:0,after:120}));
+      children.push(_dH2('📱  中文口播稿','1A1A2E'));
+      children.push(_dDivider('1A1A2E',0,80));
+
+      if(shortScript){
+        children=children.concat(_dScriptBlock('TikTok 口播稿',shortScript.slice(0,2000)+(shortScript.length>2000?'\n…':'')+'\n\n（含配图提示词见上方完整内容）',5));
+      }else{
+        children=children.concat(_dScriptBlock('前 3 秒钩子','直接说最震撼结论',3));
+        children=children.concat(_dScriptBlock('核心内容（15-45 秒）','3-4句展开数据与机制，每句≤12字',3));
+        children=children.concat(_dScriptBlock('行动指引（45-60 秒）','一条具体建议 + 免责',2));
+      }
+
+      children.push(_dPageBreak());
+
+      // Section 4: 审核清单
+      children.push(_dH1('04  发布前审核清单','2E7D32'));
+      children.push(_dPara([_dRun('全部勾选后方可进入分镜制作',{size:19,color:'888888',italic:true})],{before:0,after:120}));
+
+      var checks=[
+        ['脚本合规','D32F2F',[
+          '每个数字均已对照原论文核实',
+          '全程使用"研究发现/提示/表明"，无"证明/治愈/有效"',
+          '明确区分相关性与因果关系',
+          '末尾含免责声明',
+          '描述区置顶含论文 DOI 链接',
+        ]],
+        ['科学准确性','00897B',[
+          '论文研究阶段已正确描述（RCT/观察性/动物实验）',
+          '样本量在脚本中已注明',
+          '无夸大效果量',
+          '局限性客观，未回避负面发现',
+        ]],
+        ['内容质量','1565C0',[
+          'Hook 前 3-5 秒包含最反常识数据',
+          '至少有 1 个日常类比',
+          '行动建议具体可操作',
+          '中英文核心数据一致',
+          'TikTok 版每句 ≤ 12 字',
+        ]],
+      ];
+
+      checks.forEach(function(group){
+        children.push(_dH2('📋  '+group[0],group[1]));
+        children.push(..._dBlank(1));
+        children.push(new docx.Table({width:{size:9360,type:docx.WidthType.DXA},columnWidths:[520,8840],rows:
+          group[2].map(function(text,i){return new docx.TableRow({children:[
+            _dCell([_dPara([_dRun('☐',{size:22,color:'6C3FC4'})],{align:docx.AlignmentType.CENTER,before:0,after:0})],520,i%2===0?'FFFFFF':'F7F7F7'),
+            _dCell([_dPara([_dRun(text,{size:20})],{before:0,after:0})],8840,i%2===0?'FFFFFF':'F7F7F7',{top:80,bottom:80,left:160,right:120})
+          ]});})
+        }));
+        children.push(..._dBlank(1));
+      });
+
+      children.push(..._dBlank(1));
+      children.push(new docx.Table({width:{size:9360,type:docx.WidthType.DXA},columnWidths:[3120,3120,3120],rows:[
+        new docx.TableRow({children:[
+          _dCell([_dPara([_dRun('审核人签字',{bold:true,size:19,color:'888888'})],{before:0,after:80}),_dPara([_dRun('______________________',{size:20})],{before:0,after:0})],3120,'F7F7F7',{top:160,bottom:160,left:200,right:200}),
+          _dCell([_dPara([_dRun('审核日期',{bold:true,size:19,color:'888888'})],{before:0,after:80}),_dPara([_dRun('______________________',{size:20})],{before:0,after:0})],3120,'F7F7F7',{top:160,bottom:160,left:200,right:200}),
+          _dCell([_dPara([_dRun('结论  ☐通过  ☐退回修改',{bold:true,size:19,color:'888888'})],{before:0,after:80}),_dPara([_dRun('',{size:20})],{before:0,after:0})],3120,'F7F7F7',{top:160,bottom:160,left:200,right:200}),
+        ]})
+      ]}));
+
+      var docStyles={
+        default:{document:{run:{font:'Arial',size:22}}},
+        paragraphStyles:[
+          {id:'Heading1',name:'Heading 1',basedOn:'Normal',next:'Normal',quickFormat:true,run:{size:40,bold:true,font:'Arial'},paragraph:{spacing:{before:300,after:80},outlineLevel:0}},
+          {id:'Heading2',name:'Heading 2',basedOn:'Normal',next:'Normal',quickFormat:true,run:{size:28,bold:true,font:'Arial'},paragraph:{spacing:{before:220,after:60},outlineLevel:1}},
+          {id:'Heading3',name:'Heading 3',basedOn:'Normal',next:'Normal',quickFormat:true,run:{size:24,bold:true,font:'Arial'},paragraph:{spacing:{before:160,after:40},outlineLevel:2}},
+        ]
+      };
+
+      var d=new docx.Document({
+        styles:docStyles,
+        sections:[{
+          properties:{page:{size:{width:12240,height:15840},margin:{top:1080,right:1080,bottom:1080,left:1080}}},
+          headers:{default:_dHeader('脚本审核文档',date)},
+          footers:{default:_dFooter()},
+          children:children
+        }]
+      });
+      docx.Packer.toBlob(d).then(function(blob){
+        var url=URL.createObjectURL(blob);
+        var a=document.createElement('a');a.href=url;
+        a.download='Paperstill_脚本审核_'+title.slice(0,20).replace(/[^\u4e00-\u9fa5a-zA-Z0-9]/g,'_')+'.docx';
+        document.body.appendChild(a);a.click();
+        setTimeout(function(){document.body.removeChild(a);URL.revokeObjectURL(url);},1000);
+        showToast('✓ 脚本文档已下载');
+      });
+    }catch(e){showToast('导出失败：'+e.message);console.error(e);}
+  });
+}
+
+/* ═══════════════════════════════════════════
+   EXPORT STORYBOARD DOC
+═══════════════════════════════════════════ */
+function exportStoryboardDoc(){
+  loadDocxLib(function(){
+    showToast('正在生成分镜文档…');
+    try{
+      var shots=getActiveShots();
+      var title=(selectedTopic?selectedTopic.title:'[题材]')||'[题材]';
+      var date=new Date().toLocaleDateString('zh-CN');
+      var plat=activePlatform==='long'?'YouTube 16:9':'TikTok 9:16';
+      var totalSec=shots.reduce(function(a,s){return a+(parseInt(s.dur,10)||0);},0);
+      var totalStr=formatSec(totalSec);
+
+      var typeColors={hook:'B71C1C','A-roll':'0D47A1','B-roll':'1B5E20',data:'E65100',chapter:'4A148C','text-card':'00695C',outro:'37474F'};
+      var CW=9360;
+
+      // Storyboard table
+      var colWidths=[380,600,380,2200,2100,1100,760,640]; // sum = ~8160 (portrait)
+      var colSum=colWidths.reduce(function(a,b){return a+b;},0);
+      // Scale to content width
+      var scale=CW/colSum;
+      colWidths=colWidths.map(function(w){return Math.round(w*scale);});
+
+      function _sbHCell(text,w){return _dHCell(text,w,'1A1A2E');}
+      function _sbCell(text,w,fill,color){
+        return _dCell([_dPara([_dRun(text||'',{size:18,color:color||'1A1A1A'})],{before:0,after:0})],w,fill||'FFFFFF',{top:80,bottom:80,left:100,right:100});
+      }
+
+      var sbHeaderRow=new docx.TableRow({tableHeader:true,children:[
+        _sbHCell('镜号',colWidths[0]),_sbHCell('类型',colWidths[1]),_sbHCell('秒',colWidths[2]),
+        _sbHCell('旁白/口播',colWidths[3]),_sbHCell('画面描述',colWidths[4]),
+        _sbHCell('屏幕字幕',colWidths[5]),_sbHCell('状态',colWidths[6]),_sbHCell('备注',colWidths[7]),
+      ]});
+
+      var sbRows=[sbHeaderRow];
+      if(shots.length){
+        shots.forEach(function(s,i){
+          var tc=typeColors[s.type]||'0D47A1';
+          var alt=i%2===1?'F7F7F7':'FFFFFF';
+          sbRows.push(new docx.TableRow({children:[
+            _sbCell(String(s.no),colWidths[0],alt,'1A1A2E'),
+            new docx.TableCell({borders:_dBorders,width:{size:colWidths[1],type:docx.WidthType.DXA},shading:{fill:tc,type:docx.ShadingType.CLEAR},margins:{top:80,bottom:80,left:80,right:80},children:[_dPara([_dRun(s.type||'A-roll',{bold:true,color:'FFFFFF',size:16})],{align:docx.AlignmentType.CENTER,before:0,after:0})]}),
+            _sbCell(s.dur?s.dur+'s':'',colWidths[2],alt,'888888'),
+            _sbCell(s.narration||'',colWidths[3],alt),
+            _sbCell(s.visual||'',colWidths[4],alt),
+            _sbCell(s.onScreen||'',colWidths[5],alt,'444444'),
+            _sbCell(s.status||'草稿',colWidths[6],alt,'888888'),
+            _sbCell(s.notes||'',colWidths[7],alt,'888888'),
+          ]}));
+        });
+      }else{
+        // 10 blank rows
+        for(var bi=0;bi<10;bi++){
+          var ba=bi%2===1?'F7F7F7':'FFFFFF';
+          sbRows.push(new docx.TableRow({children:[
+            _sbCell(String(bi+1),colWidths[0],ba,'888888'),
+            _sbCell('A-roll',colWidths[1],ba,'888888'),
+            _sbCell('',colWidths[2],ba),_sbCell('',colWidths[3],ba),
+            _sbCell('',colWidths[4],ba),_sbCell('',colWidths[5],ba),
+            _sbCell('草稿',colWidths[6],ba,'888888'),_sbCell('',colWidths[7],ba),
+          ]}));
+        }
+      }
+
+      // Prompt table
+      var promptShots=shots.filter(function(s){return s.visual&&s.visual.trim().length>10;});
+
+      var children2=[
+        // Cover
+        ..._dBlank(2),
+        _dPara([_dRun('✦  PAPERSTILL',{bold:true,size:26,color:'6C3FC4'})],{align:docx.AlignmentType.CENTER,before:0,after:30}),
+        _dPara([_dRun('Storyboard Management Document',{size:20,color:'888888',italic:true})],{align:docx.AlignmentType.CENTER,before:0,after:160}),
+        new docx.Paragraph({alignment:docx.AlignmentType.CENTER,spacing:{before:0,after:60},
+          border:{bottom:{style:docx.BorderStyle.SINGLE,size:12,color:'6C3FC4',space:8}},
+          children:[new docx.TextRun({text:title,font:'Arial',size:48,bold:true,color:'1A1A2E'})]}),
+        ..._dBlank(1),
+        new docx.Table({width:{size:CW,type:docx.WidthType.DXA},columnWidths:[1872,1872,1872,1872,1872],rows:[
+          _dMetaRow(['📅 日期','🎯 平台','⏱ 总时长','🎬 总镜头','📊 状态'],[1872,1872,1872,1872,1872]),
+          new docx.TableRow({children:[
+            _dCell([_dPara([_dRun(date,{size:20})],{before:0,after:0})],1872,'EEEEEE',{top:80,bottom:80,left:160,right:160}),
+            _dCell([_dPara([_dRun(plat,{size:20})],{before:0,after:0})],1872,'EEEEEE',{top:80,bottom:80,left:160,right:160}),
+            _dCell([_dPara([_dRun(totalStr,{size:20})],{before:0,after:0})],1872,'EEEEEE',{top:80,bottom:80,left:160,right:160}),
+            _dCell([_dPara([_dRun(String(shots.length)+'镜',{size:20})],{before:0,after:0})],1872,'EEEEEE',{top:80,bottom:80,left:160,right:160}),
+            _dCell([_dPara([_dRun('草稿',{size:20})],{before:0,after:0})],1872,'EEEEEE',{top:80,bottom:80,left:160,right:160}),
+          ]})
+        ]}),
+        ..._dBlank(1),
+        // Legend
+        _dPara([_dRun('色彩图例：',{bold:true,size:19,color:'888888'})],{before:0,after:40}),
+        new docx.Table({width:{size:CW,type:docx.WidthType.DXA},columnWidths:Array(7).fill(Math.floor(CW/7)),rows:[
+          new docx.TableRow({children:[
+            ['HOOK','B71C1C'],['A-ROLL','0D47A1'],['B-ROLL','1B5E20'],['DATA','E65100'],
+            ['CHAPTER','4A148C'],['TEXT-CARD','00695C'],['OUTRO','37474F']
+          ].map(function(item,i){
+            return new docx.TableCell({borders:_dBorders,width:{size:Math.floor(CW/7),type:docx.WidthType.DXA},shading:{fill:item[1],type:docx.ShadingType.CLEAR},margins:{top:60,bottom:60,left:80,right:80},
+              children:[_dPara([_dRun(item[0],{bold:true,color:'FFFFFF',size:16})],{align:docx.AlignmentType.CENTER,before:0,after:0})]});
+          })
+        ]})]
+        }),
+        _dPageBreak(),
+
+        // Section 1: 分镜表
+        _dH1('01  分镜表 · '+plat,'D32F2F'),
+        _dPara([_dRun('总镜数：'+shots.length+'  ·  总时长：'+totalStr+'  ·  目标：'+(activePlatform==='long'?'8-15 分钟':'15-90 秒'),{size:19,color:'888888',italic:true})],{before:0,after:120}),
+        new docx.Table({width:{size:CW,type:docx.WidthType.DXA},columnWidths:colWidths,rows:sbRows}),
+        ..._dBlank(1),
+        new docx.Table({width:{size:CW,type:docx.WidthType.DXA},columnWidths:[3120,3120,3120],rows:[
+          new docx.TableRow({children:[
+            _dCell([_dPara([_dRun('审核状态：☐ 草稿  ☐ 审核中  ☐ 已确认',{size:19,color:'888888'})],{before:0,after:0})],3120,'F7F7F7',{top:100,bottom:100,left:160,right:160}),
+            _dCell([_dPara([_dRun('审核人：____________________',{size:19,color:'888888'})],{before:0,after:0})],3120,'F7F7F7',{top:100,bottom:100,left:160,right:160}),
+            _dCell([_dPara([_dRun('日期：____________________',{size:19,color:'888888'})],{before:0,after:0})],3120,'F7F7F7',{top:100,bottom:100,left:160,right:160}),
+          ]})
+        ]}),
+        _dPageBreak(),
+
+        // Section 2: 画面提示词
+        _dH1('02  画面提示词汇总','00897B'),
+        _dPara([_dRun('将提示词直接复制到 Kling / Veo / Ideogram，逐镜生成素材',{size:19,color:'888888',italic:true})],{before:0,after:120}),
+      ];
+
+      if(promptShots.length){
+        var promptColWidths=[380,7500,1480];
+        children2.push(new docx.Table({width:{size:CW,type:docx.WidthType.DXA},columnWidths:promptColWidths,rows:[
+          new docx.TableRow({children:[_sbHCell('镜号',380),_sbHCell('画面描述 / 提示词',7500),_sbHCell('状态',1480)]}),
+          ...promptShots.map(function(s,i){
+            return new docx.TableRow({children:[
+              _sbCell(String(s.no),380,i%2?'F7F7F7':'FFFFFF','888888'),
+              _sbCell(s.visual,7500,i%2?'F7F7F7':'FFFFFF'),
+              _sbCell('☐ 待生成',1480,i%2?'F7F7F7':'FFFFFF','888888'),
+            ]});
+          })
+        ]}));
+      }else{
+        children2.push(_dPara([_dRun('（生成分镜后，画面描述将自动填入此处）',{size:20,color:'888888',italic:true})],{before:40,after:40}));
+      }
+
+      children2.push(_dPageBreak());
+
+      // Section 3: 审核清单
+      children2.push(_dH1('03  发布前分镜审核清单','2E7D32'));
+      children2.push(_dPara([_dRun('全部勾选 → 进入剪辑制作',{size:19,color:'888888',italic:true})],{before:0,after:120}));
+
+      var sbChecks=[
+        ['完整性','1A1A2E',['所有镜头均已分配时长，总时长在目标范围内','每个 A-roll 镜头均有旁白文字','每个 B-roll / Data 镜头均有具体画面描述','Hook 前 3 秒已包含最强钩子','Outro 含免责声明']],
+        ['画面质量','00897B',['画面描述具体可执行','Kling/Veo 提示词已针对平台比例（16:9/9:16）','数据图镜头含具体图表类型描述','无版权风险场景描述']],
+        ['时长节奏','D32F2F',['YouTube 版总时长 8-15 分钟','TikTok 版总时长 15-90 秒','Hook 镜头 ≤ 15 秒','Outro ≤ 15 秒','章节过渡分布均匀']],
+      ];
+
+      sbChecks.forEach(function(group){
+        children2.push(_dH2('📋  '+group[0],group[1]));
+        children2.push(..._dBlank(1));
+        children2.push(new docx.Table({width:{size:CW,type:docx.WidthType.DXA},columnWidths:[520,8840],rows:
+          group[2].map(function(text,i){return new docx.TableRow({children:[
+            _dCell([_dPara([_dRun('☐',{size:22,color:'6C3FC4'})],{align:docx.AlignmentType.CENTER,before:0,after:0})],520,i%2===0?'FFFFFF':'F7F7F7'),
+            _dCell([_dPara([_dRun(text,{size:20})],{before:0,after:0})],8840,i%2===0?'FFFFFF':'F7F7F7',{top:80,bottom:80,left:160,right:120})
+          ]});})
+        }));
+        children2.push(..._dBlank(1));
+      });
+
+      children2.push(..._dBlank(1));
+      children2.push(new docx.Table({width:{size:CW,type:docx.WidthType.DXA},columnWidths:[3120,3120,3120],rows:[
+        new docx.TableRow({children:[
+          _dCell([_dPara([_dRun('审核人签字',{bold:true,size:19,color:'888888'})],{before:0,after:80}),_dPara([_dRun('______________________',{size:20})],{before:0,after:0})],3120,'F7F7F7',{top:160,bottom:160,left:200,right:200}),
+          _dCell([_dPara([_dRun('审核日期',{bold:true,size:19,color:'888888'})],{before:0,after:80}),_dPara([_dRun('______________________',{size:20})],{before:0,after:0})],3120,'F7F7F7',{top:160,bottom:160,left:200,right:200}),
+          _dCell([_dPara([_dRun('结论  ☐ 通过  ☐ 退回修改',{bold:true,size:19,color:'888888'})],{before:0,after:80}),_dPara([_dRun('',{size:20})],{before:0,after:0})],3120,'F7F7F7',{top:160,bottom:160,left:200,right:200}),
+        ]})
+      ]}));
+
+      var docStyles2={
+        default:{document:{run:{font:'Arial',size:22}}},
+        paragraphStyles:[
+          {id:'Heading1',name:'Heading 1',basedOn:'Normal',next:'Normal',quickFormat:true,run:{size:40,bold:true,font:'Arial'},paragraph:{spacing:{before:300,after:80},outlineLevel:0}},
+          {id:'Heading2',name:'Heading 2',basedOn:'Normal',next:'Normal',quickFormat:true,run:{size:28,bold:true,font:'Arial'},paragraph:{spacing:{before:220,after:60},outlineLevel:1}},
+          {id:'Heading3',name:'Heading 3',basedOn:'Normal',next:'Normal',quickFormat:true,run:{size:24,bold:true,font:'Arial'},paragraph:{spacing:{before:160,after:40},outlineLevel:2}},
+        ]
+      };
+
+      var d2=new docx.Document({
+        styles:docStyles2,
+        sections:[{
+          properties:{page:{size:{width:12240,height:15840},margin:{top:1080,right:1080,bottom:1080,left:1080}}},
+          headers:{default:_dHeader('分镜管理文档',plat+' · '+date)},
+          footers:{default:_dFooter()},
+          children:children2
+        }]
+      });
+      docx.Packer.toBlob(d2).then(function(blob){
+        var url=URL.createObjectURL(blob);
+        var a=document.createElement('a');a.href=url;
+        a.download='Paperstill_分镜_'+title.slice(0,20).replace(/[^\u4e00-\u9fa5a-zA-Z0-9]/g,'_')+'.docx';
+        document.body.appendChild(a);a.click();
+        setTimeout(function(){document.body.removeChild(a);URL.revokeObjectURL(url);},1000);
+        showToast('✓ 分镜文档已下载');
+      });
+    }catch(e){showToast('导出失败：'+e.message);console.error(e);}
+  });
+}
+
+/* ── show export script btn when script is done ── */
+function _syncExportScriptBtn(){
+  var btn=document.getElementById('exportScriptDocBtn');
+  if(!btn)return;
+  var hasScript=(scriptOutputs[activePlatform]||platformOutputs[activePlatform]||'').length>100;
+  btn.style.display=hasScript?'inline-flex':'none';
+}
+
 
 </script>
 </body>
